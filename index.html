@@ -303,8 +303,25 @@ function applyData(d){
   CUR=ORDER[0]||Object.keys(SUBJECTS)[0]||'';
   DATA=SUBJECTS[CUR]||null;
 }
-/* 载入数据：file:// 下 fetch 会被浏览器拦截，故提供 data.js 兜底（window.MM_DATA） */
+/* 载入数据，三级来源：
+ *  1) ?api=1 → 从后端 /api/tree 读取（管理界面改数据后画布刷新即见）
+ *  2) 否则 → fetch data.json（静态部署）
+ *  3) file:// 兜底 → window.MM_DATA（data.js）
+ *  注：API 返回的 palette 需从 data.json/兜底补全，树结构 subjects/order 直接可用
+ */
+function applyPalette(d){
+  // API 不带配色表，用内嵌默认配色补齐（与 PALETTE 键一致）
+  const def={indigo:'#6366f1',emerald:'#10b981',fuchsia:'#d946ef',amber:'#f59e0b',sky:'#0ea5e9',rose:'#f43f5e',violet:'#8b5cf6',teal:'#14b8a6',slate:'#64748b'};
+  d.palette=d.palette||def;
+  return d;
+}
 function loadData(){
+  const useApi = new URLSearchParams(location.search).get('api')==='1';
+  if(useApi){
+    return fetch('/api/tree').then(r=>{if(!r.ok)throw new Error('API '+r.status);return r.json()}).then(applyPalette)
+      .catch(err=>{ console.warn('API 载入失败，回退静态数据',err);
+        return fetch('data.json').then(r=>r.json()).catch(()=>window.MM_DATA); });
+  }
   return fetch('data.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
     .catch(()=>{
       if(window.MM_DATA) return window.MM_DATA;   // data.js 兜底（本地双击打开时用）
@@ -341,23 +358,29 @@ function makeNode(name,level,color,parent,extra){
 }
 function buildTree(D){
   const root=makeNode(D.root.name,0,'slate',null,{signal:D.root.signal,isRoot:true});
+  // 递归建任意深度节点；字符串节点直接当名字，对象节点带 star/children/examples
+  function addChildren(list, parent, level, color, mod){
+    (list||[]).forEach(item=>{
+      const isObj = item && typeof item==='object';
+      const name = isObj ? (item.name||'') : String(item);
+      const star = isObj ? !!item.star : false;
+      const examples = isObj ? (item.examples||[]) : [];
+      const node = makeNode(name, level, color, parent, {star, examples, mod});
+      if(isObj && item.children && item.children.length){
+        addChildren(item.children, node, level+1, color, mod);
+      }
+      parent.children.push(node);
+    });
+  }
   (D.branches||[]).forEach(b=>{
     const color=D.modules[b.name]||D.color;
-    const bn=makeNode(b.name,1,color,root,{star:!!b.star,mod:b.name});
-    (b.children||[]).forEach(t=>{
-      const tn=makeNode(typeof t==='string'?t:t.name,2,color,bn,{star:!!(t&&t.star)});
-      const tObj=(typeof t==='string')?{}:t;
-      (tObj.children||[]).forEach(s=>{
-        const sObj=(typeof s==='string')?{}:s;
-        const sn=makeNode(sObj.name||s,3,color,tn,{star:!!sObj.star,examples:sObj.examples||[]});
-        tn.children.push(sn);
-      });
-      if(!tn.children.length && tObj.examples) tn.examples=tObj.examples;
-      bn.children.push(tn);
-    });
+    const bn=makeNode(b.name,1,color,root,{star:!!b.star,mod:b.name,examples:b.examples||[]});
+    addChildren(b.children, bn, 2, color, b.name);
     root.children.push(bn);
   });
-  root._open=true;root.children.forEach(c=>{c._open=false;c.children.forEach(k=>k._open=false)});
+  // 默认只展开根 + 一级（module），其余折叠，避免全树撑爆视图
+  root._open=true;
+  (function setOpen(n,l){n.children.forEach(c=>{c._open = l<1;setOpen(c,l+1)})})(root,0);
   return root;
 }
 
