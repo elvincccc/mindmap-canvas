@@ -213,6 +213,108 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
   .ans-ph{min-height:120px}
 }
 
+/* ===== 朱批·审题台 视觉皮肤（作用于弹窗内部，class 以 zp- 前缀隔离） ===== */
+#detailBox.zp-mode{
+  background:#F4F0E6;border:1px solid #cdbfa8;border-radius:5px;
+  background-image:radial-gradient(circle at 1px 1px,rgba(27,36,48,.035) 1px,transparent 0);background-size:20px 20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.4);
+}
+#detailBox.zp-mode header{background:#1B2430;border-bottom:3px solid #C4362A}
+#detailBox.zp-mode header .t{color:#F4F0E6}
+#detailBox.zp-mode header .path{color:#9fb0c8;font-family:Georgia,serif}
+#detailBox.zp-mode header .x{color:#c7b8a6}
+.zp-mode .ex-nav{background:#F4F0E6}
+.zp-mode .ex-nav-i{border-radius:3px;background:#fff;color:#45607D;border-color:#D8D0BE;font-family:Georgia,serif}
+.zp-mode .ex-nav-i:hover{border-color:#C4362A;color:#C4362A}
+.zp-mode .ex-nav-i.active{background:#1B2430;color:#F4F0E6;border-color:#1B2430}
+#detailLeft.zp-side{background:#F4F0E6}
+.zp-mode .ex-card{border-bottom:1px solid #D8D0BE}
+.zp-mode .ex-card.active{background:rgba(196,54,42,.045);border-left:3px solid #C4362A;padding-left:8px;margin-left:-11px}
+.zp-mode .ex-num{font-family:Georgia,serif;color:#fff;background:#45607D;border-radius:2px}
+.zp-mode .ex-src{color:#8a8377}
+.zp-mode .ex-tag.right{background:#1E7A5A;color:#fff;border:none;border-radius:2px}
+.zp-mode .ex-tag.wrong{background:#C4362A;color:#fff;border:none;border-radius:2px}
+.zp-mode .ex-q{color:#1B2430;font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif}
+.zp-mode .ex-opts{gap:7px}
+.zp-mode .ex-opt{position:relative;padding:9px 12px 9px 38px;border-radius:3px;background:#FBF9F3;border-color:#D8D0BE;color:#1B2430}
+.zp-mode .ex-opt::before{content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;border-radius:50%;border:1.5px solid #45607D;background:#fff}
+.zp-mode .ex-opt.pickable{cursor:pointer;border-color:#D8D0BE}
+.zp-mode .ex-opt.pickable:hover{background:#fff;border-color:#45607D}
+.zp-mode .ex-opt.sel{border-color:#C4362A;background:#FBF0EC;color:#1B2430}
+.zp-mode .ex-opt.sel::before{border-color:#C4362A;background:radial-gradient(circle,#C4362A 0 5px,transparent 6px)}
+.zp-mode .ex-opt.correct{border-color:#1E7A5A;background:#EAF4EF;color:#1E7A5A;font-weight:700}
+.zp-mode .ex-opt.correct::before{border-color:#1E7A5A;background:radial-gradient(circle,#1E7A5A 0 5px,transparent 6px)}
+.zp-mode .ex-opt.wrong{border-color:#C4362A;background:#FBF0EC;color:#C4362A;text-decoration:line-through}
+.zp-mode .ex-opt.wrong::before{border-color:#C4362A;background:radial-gradient(circle,#C4362A 0 5px,transparent 6px)}
+.zp-mode .ex-btn{font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;font-weight:800;border-radius:3px}
+.zp-mode .ans-open{background:transparent;color:#1B2430;border-color:#1B2430}
+.zp-mode .ans-open:hover{background:#1B2430;color:#F4F0E6}
+.zp-mode .quiz-start{background:#C4362A;color:#fff;border-color:#C4362A}
+.zp-mode .quiz-start:hover{background:#a82d23}
+.zp-mode .quiz-submit{background:#45607D;color:#fff;border-color:#45607D}
+.zp-mode .quiz-fb{border-radius:3px}
+.zp-mode .quiz-fb.ok{color:#1E7A5A;background:#EAF4EF;border-color:#1E7A5A}
+.zp-mode .quiz-fb.no{color:#C4362A;background:#FBF0EC;border-color:#C4362A}
+.zp-mode .quiz-fb .ansline{color:#45607D}
+.zp-mode .ex-fig{border-color:#D8D0BE;background:#fff;border-radius:3px}
+#detailRight.zp-side{background:#FBF8F0;border-left:1px solid #D8D0BE}
+.zp-mode .ans-ph{color:#8a8377}
+.zp-mode .ans-ph-t{color:#45607D}
+.zp-mode .ans-ph-d b{color:#C4362A}
+/* v2 解析：朱批五块 */
+.zp-wrap{font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;color:#1B2430}
+.zp-hero{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px double #D8D0BE;margin-bottom:12px}
+.zp-seal{flex:none;width:60px;height:60px;border:3px double #C4362A;color:#C4362A;border-radius:3px;font-family:Georgia,serif;font-size:38px;font-weight:700;display:grid;place-items:center;transform:rotate(-3deg);box-shadow:inset 0 0 0 2px #FBF8F0;line-height:1}
+.zp-hero-txt{min-width:0}
+.zp-hero-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.zp-hero-top .qn{font-family:Georgia,serif;font-size:14px;color:#45607D}
+.zp-hero-top .src{font-size:10px;color:#8a8f98}
+.zp-tag-no,.zp-tag-ok{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:2px;letter-spacing:.05em;color:#fff}
+.zp-tag-no{background:#C4362A}
+.zp-tag-ok{background:#1E7A5A}
+.zp-oneline{font-size:13px;font-weight:700;color:#1B2430;line-height:1.55}
+.zp-oneline::before{content:"「";color:#C4362A}
+.zp-oneline::after{content:"」";color:#C4362A}
+.zp-cols{display:grid;grid-template-columns:1.9fr 1fr;gap:16px;margin-bottom:12px}
+.zp-col-hd{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:#1B2430;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid #D8D0BE}
+.zp-col-hd .num{font-family:Georgia,serif;color:#C4362A;font-size:13px}
+.zp-col-hd .cnt{margin-left:auto;font-family:ui-monospace,monospace;font-size:9px;color:#9a9ea6;font-weight:400}
+.zp-steps{position:relative;display:grid;gap:7px}
+.zp-steps::before{content:"";position:absolute;left:10px;top:8px;bottom:8px;width:1px;background:#D8D0BE}
+.zp-step{position:relative;padding-left:28px}
+.zp-step .dot{position:absolute;left:0;top:1px;width:21px;height:21px;border-radius:50%;background:#FBF8F0;border:1.5px solid #45607D;color:#45607D;font-family:Georgia,serif;font-size:11px;font-weight:700;display:grid;place-items:center;z-index:1}
+.zp-step.key .dot{background:#C4362A;border-color:#C4362A;color:#fff;box-shadow:0 0 0 3px rgba(196,54,42,.13)}
+.zp-step .act{font-size:13px;font-weight:800;color:#1B2430;display:block}
+.zp-step.key .act{color:#C4362A}
+.zp-keytag{font-size:8.5px;font-weight:800;color:#fff;background:#C4362A;padding:1px 6px;border-radius:2px;margin-left:6px;letter-spacing:.05em}
+.zp-step .body{font-size:10px;line-height:1.5;color:#7a828e;margin-top:4px;display:grid;gap:2px}
+.zp-step .body .ln{display:block}
+.zp-step .body b{display:inline-block;min-width:34px;color:#45607D;font-weight:700;font-size:9px;letter-spacing:.04em}
+.zp-step.key .body b{color:#C4362A}
+.zp-errs{display:grid;gap:4px}
+.zp-err{background:#F7F4EC;padding:4px 9px;border-left:2px solid #cdbfa8;border-radius:0 2px 2px 0}
+.zp-err .h{display:flex;align-items:center;gap:7px}
+.zp-err .k{font-family:Georgia,serif;font-size:12px;font-weight:700;color:#8a8377}
+.zp-err .ty{font-size:8.5px;font-weight:700;color:#9a8f7e;background:#ece5d6;padding:0 5px;border-radius:2px}
+.zp-err .why{font-size:10px;color:#7a756d;line-height:1.45}
+.zp-deep{background:#fff;border:1px solid #D8D0BE;border-top:2px solid #45607D;border-radius:2px;padding:9px 13px;margin-bottom:9px}
+.zp-sec-hd{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.13em;color:#45607D;text-transform:uppercase;margin:0 0 8px}
+.zp-sec-hd::after{content:"";flex:1;height:1px;background:#D8D0BE}
+.zp-facts{display:grid;gap:6px}
+.zp-fact{display:flex;gap:9px;font-size:10.5px;color:#4a535e;line-height:1.5}
+.zp-fact b{flex:0 0 38px;font-size:9px;font-weight:800;letter-spacing:.08em;color:#45607D}
+.zp-chiprow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.zp-chiprow .lead{font-size:9px;font-weight:800;color:#45607D;letter-spacing:.1em;flex:none}
+.zp-chiprow .lead.warn{color:#9a6b12}
+.zp-chip{font-family:ui-monospace,monospace;font-size:9.5px;color:#374151;background:#F4F0E6;border:1px solid #D8D0BE;border-radius:2px;padding:2px 7px}
+.zp-chip.warn{background:#FBF3DA;border-color:#e6cf8a;color:#7a5708;font-family:inherit}
+.zp-strategy{background:#F7EBE2;border:1px solid #e5d4c4;border-radius:3px;padding:8px 12px}
+.zp-bestway{font-size:11px;color:#1B2430;line-height:1.5}
+.zp-bestway b{font-size:9px;font-weight:800;letter-spacing:.08em;color:#C4362A;margin-right:8px}
+.zp-stg-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:5px;padding-top:5px;border-top:1px dashed #e5d4c4;font-size:9px;color:#9c9186}
+.zp-stg-meta b{font-weight:700;color:#8a7f74;margin-right:4px}
+@media (max-width:760px){.zp-cols{grid-template-columns:1fr}}
+
 /* ---- 配图缩略图（点击查看大图） ---- */
 .ex-fig{margin:10px 0 0;display:inline-block;cursor:zoom-in;border-radius:8px;overflow:hidden;border:1px solid #334155;background:#0f172a;position:relative}
 .ex-fig img{display:block;max-width:100%;max-height:180px;object-fit:contain}
@@ -660,6 +762,10 @@ let activeExIdx=-1;      // 当前激活的题索引
 
 function openDetail(n){
   hideHover();
+  /* 重置解析皮肤：默认深色，renderAns 按当前题是否有 solution 再决定 */
+  detailBox.classList.remove('zp-mode');
+  document.getElementById('detailLeft').classList.remove('zp-side');
+  document.getElementById('detailRight').classList.remove('zp-side');
   const path=[];let cur=n;while(cur){path.unshift(cur.name);cur=cur._parent}
   document.getElementById('detailTitle').textContent=n.name;
   document.getElementById('detailPath').textContent=path.join(' › ');
@@ -706,12 +812,61 @@ function openDetail(n){
   detailBox.classList.add('open');
 }
 
-/* 渲染右栏解析面板（答案 + Tab 分步切换） */
+/* 朱批·审题台：v2 五块结构化解析 HTML */
+function renderZpSolution(ex,i){
+  const v=ex.solution||{},ins=v.insight||{},stg=ins.strategy||{};
+  let h='<div class="zp-wrap">';
+  // ① 答案印章条
+  const tag=ex.hit===true?'<span class="zp-tag-ok">✓ 做对</span>':(ex.hit===false?'<span class="zp-tag-no">✕ 做错</span>':'');
+  h+=`<div class="zp-hero"><div class="zp-seal">${esc(v.answer||ex.ans||'')}</div><div class="zp-hero-txt">
+    <div class="zp-hero-top"><span class="qn">第 ${i+1} 题</span><span class="src">${esc(ex.src||'')}</span>${tag}</div>
+    <div class="zp-oneline">${esc(v.oneLiner||'')}</div></div></div>`;
+  // ② 步骤 / 错因 双栏
+  h+='<div class="zp-cols"><div>';
+  h+=`<div class="zp-col-hd"><span class="num">壹</span>解题步骤<span class="cnt">${(v.steps||[]).length} STEPS</span></div><div class="zp-steps">`;
+  (v.steps||[]).forEach(st=>{
+    h+=`<div class="zp-step ${st.key?'key':''}"><div class="dot">${st.n}</div>
+      <div class="act">${esc(st.action||'')}${st.key?'<span class="zp-keytag">关键步</span>':''}</div>
+      <div class="body"><span class="ln"><b>为什么</b>${esc(st.why||'')}</span><span class="ln"><b>内容</b>${esc(st.detail||'')}</span></div></div>`;
+  });
+  h+='</div></div><div>';
+  h+=`<div class="zp-col-hd"><span class="num">贰</span>错因<span class="cnt">只看错项</span></div><div class="zp-errs">`;
+  (v.errors||[]).forEach(e=>{
+    h+=`<div class="zp-err"><div class="h"><span class="k">${esc(e.o||'')}</span><span class="ty">${esc(e.type||'')}</span></div><div class="why">${esc(e.why||'')}</div></div>`;
+  });
+  h+='</div></div></div>';
+  // ③ 深度解析笺（上下排布）
+  h+='<div class="zp-deep"><div class="zp-sec-hd">叁 · 深度解析</div><div class="zp-facts">';
+  [['信号',ins.signal],['本质',ins.essence]].forEach(r=>{if(r[1])h+=`<div class="zp-fact"><b>${r[0]}</b>${esc(r[1])}</div>`});
+  h+='</div>';
+  if(ins.formula&&ins.formula.length){h+='<div class="zp-chiprow"><span class="lead">通式</span>'+ins.formula.map(x=>`<span class="zp-chip">${esc(x)}</span>`).join('')+'</div>'}
+  if(ins.pitfalls&&ins.pitfalls.length){h+='<div class="zp-chiprow"><span class="lead warn">易错</span>'+ins.pitfalls.map(x=>`<span class="zp-chip warn">${esc(x)}</span>`).join('')+'</div>'}
+  h+='</div>';
+  // ④ 考场策略（最优解为主，其余小字）
+  h+=`<div class="zp-strategy"><div class="zp-bestway"><b>最优解</b>${esc(stg.bestWay||'-')}</div>
+    <div class="zp-stg-meta"><span><b>取舍</b>${esc(stg.shouldDo||'-')}</span><span><b>耗时</b>${esc(stg.timeCost||'-')}</span><span><b>陷阱</b>${esc(stg.traps||'-')}</span></div></div>`;
+  h+='</div>';
+  return h;
+}
+
+/* 渲染右栏解析面板：v2 朱批结构优先，无 solution 回退旧 Tab */
 function renderAns(i){
   const ex=detailExs[i];if(!ex)return;
   const ph=document.getElementById('ansPlaceholder');
   const panel=document.getElementById('ansPanel');
   ph.style.display='none';
+  /* —— v2 结构化解析（朱批·审题台）—— */
+  if(ex.solution){
+    detailBox.classList.add('zp-mode');
+    document.getElementById('detailLeft').classList.add('zp-side');
+    document.getElementById('detailRight').classList.add('zp-side');
+    panel.innerHTML=renderZpSolution(ex,i);
+    return;
+  }
+  /* —— 旧字段回退：深色 Tab 结构 —— */
+  detailBox.classList.remove('zp-mode');
+  document.getElementById('detailLeft').classList.remove('zp-side');
+  document.getElementById('detailRight').classList.remove('zp-side');
   // 按需构建 Tab（只显示有内容的板块）
   const tabs=[];
   if(ex.steps&&ex.steps.length){
