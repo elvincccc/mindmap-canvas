@@ -143,6 +143,18 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .ex-answer .an{margin-top:10px;padding-top:10px;border-top:1px solid #1e293b}
 .ex-answer .an b{color:#a5b4fc;font-size:12px}
 .ex-answer .an div{font-size:12.5px;color:#94a3b8;line-height:1.8;white-space:pre-line;margin-top:5px}
+/* 分步解题步骤 */
+.ex-answer .steps{margin-top:11px;padding-top:10px;border-top:1px solid #1e293b}
+.ex-answer .steps b{color:#34d399;font-size:12px;display:block;margin-bottom:7px}
+.ex-answer .step{position:relative;padding:6px 0 6px 30px;font-size:12.5px;color:#cbd5e1;line-height:1.75}
+.ex-answer .step .n{position:absolute;left:0;top:6px;width:20px;height:20px;border-radius:6px;background:#064e3b;color:#6ee7b7;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+/* 选项排除分析 */
+.ex-answer .excl{margin-top:11px;padding-top:10px;border-top:1px solid #1e293b}
+.ex-answer .excl b{color:#f472b6;font-size:12px;display:block;margin-bottom:7px}
+.ex-answer .excl-row{padding:5px 0;font-size:12.5px;line-height:1.7;color:#94a3b8;display:flex;gap:8px}
+.ex-answer .excl-row .k{font-weight:800;flex:none;width:16px}
+.ex-answer .excl-row.ok .k{color:#34d399}
+.ex-answer .excl-row.no .k{color:#f87171}
 .ex-empty{font-size:12.5px;color:#64748b;padding:10px 0}
 
 /* ---- Pad/触屏适配：放大点击区与触控字号（桌面鼠标不受影响） ---- */
@@ -154,6 +166,7 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
   .ex-btn{padding:10px 16px;font-size:13.5px}
   .ex-q{font-size:16px}
   .ex-answer .s,.ex-answer .an div{font-size:14px}
+  .ex-answer .step,.ex-answer .excl-row{font-size:14px}
   .quiz-fb{padding:10px 13px;font-size:14px}
 }
 /* 窄屏竖屏 Pad：进一步压缩边距，给内容留空间 */
@@ -535,11 +548,21 @@ function openDetail(n){
       const mask=/季/.test(ex.src||'')?'模考':'真题';
       const fig=ex.img?`<div class="ex-fig" data-zoom="${esc(ex.img)}"><img src="${esc(ex.img)}" alt="例题配图" loading="lazy"><span class="zoom-hint">🔍 点击放大</span></div>`:'';
       let ansBlock='';
-      if(ex.ans||ex.solve||ex.analysis){
+      if(ex.ans||ex.solve||ex.analysis||(ex.steps&&ex.steps.length)){
+        // 分步解题步骤
+        const stepsHtml=(ex.steps&&ex.steps.length)
+          ?`<div class="steps"><b>🪜 解题步骤</b>${ex.steps.map((st,si)=>`<div class="step"><span class="n">${si+1}</span><span>${rich(st)}</span></div>`).join('')}</div>`
+          :'';
+        // 选项排除分析
+        const exclHtml=(ex.exclude&&ex.exclude.length)
+          ?`<div class="excl"><b>🔍 选项排除</b>${ex.exclude.map(x=>`<div class="excl-row ${x.ok?'ok':'no'}"><span class="k">${esc(x.o||'')}</span><span>${esc(x.r||'')}</span></div>`).join('')}</div>`
+          :'';
         ansBlock=`<div class="ex-answer" id="${uid}">`
           +(ex.ans?`<div class="a">答案：${esc(ex.ans)}</div>`:'')
-          +(ex.solve?`<div class="s">${rich(ex.solve)}</div>`:'')
+          +stepsHtml
+          +(ex.solve?`<div class="an" style="margin-top:11px;padding-top:10px;border-top:1px solid #1e293b"><b>💡 解法</b><div>${rich(ex.solve)}</div></div>`:'')
           +(ex.analysis?`<div class="an"><b>📚 深度解析</b><div>${rich(ex.analysis)}</div></div>`:'')
+          +exclHtml
           +`</div>`;
       }else{
         ansBlock=`<div class="ex-answer" id="${uid}"><div class="s" style="color:#64748b">（该例题暂无答案/解析字段，接入真实数据后显示）</div></div>`;
