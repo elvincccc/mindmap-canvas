@@ -227,10 +227,11 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
   <div class="tools">
     <button class="btn" id="btnFilter" title="筛选（题源 / 对错）">▽ 筛选</button>
     <button class="btn sticky" id="btnSticky" title="便签">🗒 便签</button>
+    <button class="btn ico" id="btnCollapseAll" title="全部收起">⊖</button>
+    <button class="btn ico" id="btnExpandAll" title="全部展开">⊕</button>
     <button class="btn ico" id="btnCenter" title="回到根">⌖</button>
-    <button class="btn ico" id="btnFit" title="适应视图">⛶</button>
-    <button class="btn ico" id="btnZoomOut" title="缩小">－</button>
-    <button class="btn ico" id="btnZoomIn" title="放大">＋</button>
+    <button class="btn ico" id="btnFit" title="适应视图">⊟</button>
+    <button class="btn ico" id="btnFull" title="全屏">⛶</button>
   </div>
 </div>
 
@@ -378,9 +379,9 @@ function buildTree(D){
     addChildren(b.children, bn, 2, color, b.name);
     root.children.push(bn);
   });
-  // 默认只展开根 + 一级（module），其余折叠，避免全树撑爆视图
+  // 默认全部收起：只显示根节点，其余层级全部折叠（点击节点＋逐层展开）
   root._open=true;
-  (function setOpen(n,l){n.children.forEach(c=>{c._open = l<1;setOpen(c,l+1)})})(root,0);
+  (function setOpen(n){n.children.forEach(c=>{c._open=false;setOpen(c)})})(root);
   return root;
 }
 
@@ -762,8 +763,29 @@ document.getElementById('stickyClose').onclick=()=>document.getElementById('stic
 /* 工具栏按钮 */
 document.getElementById('btnFit').onclick=fitView;
 document.getElementById('btnCenter').onclick=()=>centerOn(rootNode);
-document.getElementById('btnZoomIn').onclick=()=>zoom(1.15);
-document.getElementById('btnZoomOut').onclick=()=>zoom(.87);
+/* 全部收起 / 全部展开 */
+function setAllOpen(open){
+  (function rec(n){n.children.forEach(c=>{c._open=open;rec(c)})})(rootNode);
+  rootNode._open=true;            // 根节点保持展开，否则整棵树不可见
+  render();fitView();
+}
+document.getElementById('btnCollapseAll').onclick=()=>setAllOpen(false);
+document.getElementById('btnExpandAll').onclick=()=>setAllOpen(true);
+/* 全屏切换（作用于整个页面，工具栏保留在顶部以便退出） */
+const btnFull=document.getElementById('btnFull');
+btnFull.onclick=()=>{
+  if(!document.fullscreenElement){
+    (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);
+  }else{
+    (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+  }
+};
+document.addEventListener('fullscreenchange',()=>{
+  const on=!!document.fullscreenElement;
+  btnFull.textContent=on?'⤡':'⛶';
+  btnFull.title=on?'退出全屏':'全屏';
+  setTimeout(()=>{applyTransform();drawEdges(lastEdges)},120);
+});
 
 /* 启动：先载入数据，再初始化渲染（数据与引擎解耦的接入点） */
 function boot(d){
