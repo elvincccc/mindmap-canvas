@@ -125,7 +125,7 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 #detailBackdrop{position:fixed;inset:0;z-index:50;background:rgba(2,6,23,.6);backdrop-filter:blur(3px);display:none}
 #detailBox{
   position:fixed;left:50%;top:50%;transform:translate(-50%,-48%) scale(.97);z-index:51;
-  width:min(1200px,94vw);height:min(860px,92vh);display:none;flex-direction:column;
+  width:min(1440px,96vw);height:min(980px,96vh);display:none;flex-direction:column;
   background:rgba(15,23,42,.98);border:1px solid #475569;border-radius:16px;
   box-shadow:0 24px 64px rgba(0,0,0,.6);opacity:0;transition:.18s;
 }
@@ -778,6 +778,7 @@ function openDetail(n){
   ph.style.display='';panel.innerHTML='';
   if(!detailExs.length){
     nav.innerHTML='';
+    ph.style.display='none';
     body.innerHTML='<div class="ex-empty">该节点暂无命中当前筛选的例题。</div>';
   }else{
     // 题号导航条
@@ -810,6 +811,8 @@ function openDetail(n){
   }
   detailBackdrop.style.display='block';
   detailBox.classList.add('open');
+  /* 打开即显示解析：默认激活第一题，无需再点「看解析」；无 solution 时 renderAns 自动回退旧 Tab */
+  if(detailExs.length){ activateEx(0,false); }
 }
 
 /* 朱批·审题台：v2 五块结构化解析 HTML */
@@ -901,7 +904,7 @@ function renderAns(i){
 }
 
 /* 激活某题：左栏高亮 + 右栏渲染 + 卡片滚入视野 */
-function activateEx(i){
+function activateEx(i,doScroll=true){
   if(i<0||i>=detailExs.length)return;
   activeExIdx=i;
   const body=document.getElementById('detailBody');
@@ -909,6 +912,7 @@ function activateEx(i){
   const nav=document.getElementById('exNav');
   nav.querySelectorAll('.ex-nav-i').forEach(b=>b.classList.toggle('active',+b.dataset.nav===i));
   renderAns(i);
+  if(doScroll===false)return;
   const card=body.querySelector(`.ex-card[data-idx="${i}"]`);
   if(card)card.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
