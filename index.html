@@ -264,7 +264,7 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 </style>
 </head>
 <body>
-<script src="data.js"></script>
+<!-- data.js 不再无条件加载：线上只 fetch 分科数据，本地 file:// 由 loadDataJS() 按需注入 -->
 
 <!-- 顶部统一工具栏 -->
 <div id="topbar">
@@ -358,6 +358,7 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
  *  examples[].src 含"季"→模考，否则真题；hit:true=做对 / false=做错。
  * ============================================================================ */
 let PALETTE={}, SUBJECTS={}, ORDER=[], DATA=null, CUR='';
+let SUBJECT_FILES={}, SUBJECT_META={};   // 分科按需加载：科目→文件路径 / 科目→元信息(color)
 /* 把载入的数据对象装填到全局变量 */
 function applyData(d){
   PALETTE=d.palette||{};
@@ -366,35 +367,69 @@ function applyData(d){
   CUR=ORDER[0]||Object.keys(SUBJECTS)[0]||'';
   DATA=SUBJECTS[CUR]||null;
 }
-/* 载入数据，三级来源：
- *  1) ?api=1 → 从后端 /api/tree 读取（管理界面改数据后画布刷新即见）
- *  2) 否则 → fetch data.json（静态部署）
- *  3) file:// 兜底 → window.MM_DATA（data.js）
- *  注：API 返回的 palette 需从 data.json/兜底补全，树结构 subjects/order 直接可用
+/* 装填分科清单（manifest）：只含 order/palette/科目→文件映射/各科目 color，不含题目数据 */
+function applyManifest(m){
+  PALETTE=m.palette||{};
+  ORDER=m.order||Object.keys(m.subjects||{});
+  SUBJECT_FILES={};SUBJECT_META={};
+  const stats=m.stats||{};
+  Object.keys(m.subjects||{}).forEach(name=>{
+    const info=m.subjects[name];
+    SUBJECT_FILES[name]=typeof info==='string'?info:info.file;
+    const st=stats[name]||{};
+    SUBJECT_META[name]={color:(typeof info==='object'&&info.color)||'indigo',count:st.count||0,nodes:st.nodes||0};
+  });
+}
+/* 载入数据，优先级：
+ *  1) ?api=1 → 后端 /api/tree（管理界面改数据后刷新即见）
+ *  2) 静态部署 → data/manifest.json + 按需第一科（首屏只下 1/5 数据）
+ *  3) 清单不存在（旧部署）→ 回退完整 data.json
+ *  4) file:// 本地双击 → 动态注入 data.js 提供 window.MM_DATA（此时不下载任何网络数据）
  */
 function applyPalette(d){
-  // API 不带配色表，用内嵌默认配色补齐（与 PALETTE 键一致）
   const def={indigo:'#6366f1',emerald:'#10b981',fuchsia:'#d946ef',amber:'#f59e0b',sky:'#0ea5e9',rose:'#f43f5e',violet:'#8b5cf6',teal:'#14b8a6',slate:'#64748b'};
   d.palette=d.palette||def;
   return d;
+}
+/* 本地 file:// 兜底：按需动态注入 data.js（线上不加载，省一半流量） */
+function loadDataJS(){
+  if(window.MM_DATA)return Promise.resolve(window.MM_DATA);
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');s.src='data.js';
+    s.onload=()=>window.MM_DATA?resolve(window.MM_DATA):reject(new Error('data.js 未定义 MM_DATA'));
+    s.onerror=()=>reject(new Error('data.js 载入失败'));
+    document.head.appendChild(s);
+  });
+}
+function fetchSubject(file){
+  return fetch(file).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status+' '+file);return r.json()});
 }
 function loadData(){
   const useApi = new URLSearchParams(location.search).get('api')==='1';
   if(useApi){
     return fetch('/api/tree').then(r=>{if(!r.ok)throw new Error('API '+r.status);return r.json()}).then(applyPalette)
-      .catch(err=>{ console.warn('API 载入失败，回退静态数据',err);
-        return fetch('data.json').then(r=>r.json()).catch(()=>window.MM_DATA); });
+      .catch(err=>{ console.warn('API 载入失败，回退静态数据',err);return loadStatic(); });
   }
-  return fetch('data.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
-    .catch(()=>{
-      if(window.MM_DATA) return window.MM_DATA;   // data.js 兜底（本地双击打开时用）
-      throw new Error('无法载入 data.json，请通过本地服务器打开或确认 data.js 存在');
+  return loadStatic();
+}
+function loadStatic(){
+  /* 优先分科清单 */
+  return fetch('data/manifest.json').then(r=>{if(!r.ok)throw new Error('no manifest');return r.json()})
+    .then(m=>{
+      applyManifest(m);
+      const first=ORDER[0],file=SUBJECT_FILES[first];
+      if(!file)throw new Error('manifest 缺少首科文件');
+      return fetchSubject(file).then(sub=>{
+        SUBJECTS[first]=sub;CUR=first;DATA=sub;
+        return {palette:PALETTE,order:ORDER,subjects:SUBJECTS};
+      });
+    })
+    .catch(err=>{
+      console.warn('分科加载不可用，回退完整 data.json',err.message);
+      return fetch('data.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+        .catch(()=>loadDataJS());
     });
 }
-
-/* ============================================================================
- * 第二部分：渲染引擎 —— 只读当前 DATA，与具体内容无关
- * ============================================================================ */
 
 /* ============================================================================
  * 第二部分：渲染引擎 —— 只读当前 DATA，与具体内容无关
@@ -795,14 +830,29 @@ function renderSubjectTabs(){
   const box=document.getElementById('subjectTabs');box.innerHTML='';
   ORDER.forEach(name=>{
     const b=document.createElement('button');b.className='subj-tab'+(name===CUR?' on':'');
-    b.style.setProperty('--sc',PALETTE[SUBJECTS[name].color]);
+    // 颜色优先取 manifest 元信息（分科模式下其它科数据未加载），再回退完整数据
+    const col=(SUBJECT_META[name]&&SUBJECT_META[name].color)||(SUBJECTS[name]&&SUBJECTS[name].color)||'indigo';
+    b.style.setProperty('--sc',PALETTE[col]||'#6366f1');
     b.textContent=name;
     b.onclick=()=>switchSubject(name);
     box.appendChild(b);
   });
 }
-function switchSubject(name){
-  if(!SUBJECTS[name])return;CUR=name;DATA=SUBJECTS[name];focusNode=null;
+async function switchSubject(name){
+  if(!SUBJECT_META[name]&&!SUBJECTS[name])return;
+  // 分科按需：目标科目数据未加载则先拉取
+  if(!SUBJECTS[name]&&SUBJECT_FILES[name]){
+    const tab=[...document.querySelectorAll('#subjectTabs .subj-tab')].find(b=>b.textContent===name);
+    if(tab)tab.textContent=name+'…';
+    try{
+      SUBJECTS[name]=await fetchSubject(SUBJECT_FILES[name]);
+    }catch(e){
+      console.error('科目数据载入失败',name,e);
+      if(tab)tab.textContent=name;
+      return;
+    }
+  }
+  CUR=name;DATA=SUBJECTS[name];focusNode=null;
   rootNode=buildTree(DATA);
   fillVolSelect();
   render();defaultView();

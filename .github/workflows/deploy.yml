@@ -13,10 +13,11 @@ permissions:
   pages: write
   id-token: write
 
-# 同一时间只允许一个部署
+# 同一时间只允许一个部署；新部署触发时自动取消仍在排队/进行中的旧部署，
+# 避免多次推送造成的冗余部署与并发冲突
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
