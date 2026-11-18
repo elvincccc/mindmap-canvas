@@ -133,8 +133,20 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 #detailBox header{display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid #1e293b;flex-shrink:0}
 #detailBox header .t{font-weight:800;font-size:15px;color:#fff}
 #detailBox header .path{font-size:11px;color:#818cf8;font-weight:500}
-#detailBox header .x{margin-left:auto;background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;line-height:1}
+#detailBox header .x{margin-left:0;background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;line-height:1;flex:none}
 #detailBox header .x:hover{color:#fff}
+/* 标题栏试卷筛选器（深色/朱批标题栏通用） */
+.detail-vol-select{
+  height:29px;max-width:320px;min-width:168px;padding:0 10px;margin-left:auto;
+  border-radius:4px;cursor:pointer;font-size:12px;font-weight:700;outline:none;
+  background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(148,163,184,.38);
+  transition:border-color .15s,background .15s;
+}
+.detail-vol-select:hover,.detail-vol-select:focus{border-color:#818cf8;background:rgba(255,255,255,.14)}
+.detail-vol-select option{background:#1e293b;color:#e2e8f0}
+#detailBox.zp-mode .detail-vol-select{background:rgba(244,240,230,.09);color:#F4F0E6;border-color:rgba(196,54,42,.55)}
+#detailBox.zp-mode .detail-vol-select:hover,#detailBox.zp-mode .detail-vol-select:focus{border-color:#C4362A;background:rgba(196,54,42,.15)}
+#detailBox.zp-mode .detail-vol-select option{background:#1B2430;color:#F4F0E6}
 /* 左右分栏：左做题区 / 右解析区 */
 #detailMain{flex:1;min-height:0;display:flex;overflow:hidden}
 #detailLeft{flex:1 1 50%;min-width:0;overflow-y:auto;padding:2px 16px 16px 18px;scrollbar-width:thin}
@@ -427,11 +439,11 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
   <header>
     <span class="t" id="detailTitle">节点详情</span>
     <span class="path" id="detailPath"></span>
+    <select id="detailVolSelect" class="detail-vol-select" title="按试卷筛选本题"></select>
     <button class="x" id="detailClose" title="关闭">✕</button>
   </header>
   <div id="detailMain">
     <section id="detailLeft">
-      <div id="exNav" class="ex-nav"></div>
       <div id="detailBody"></div>
     </section>
     <section id="detailRight">
@@ -757,8 +769,10 @@ function nodeExamples(n){
 /* ---- 节点详情弹窗（方案B：左做题 / 右解析） ---- */
 const detailBox=document.getElementById('detailBox');
 const detailBackdrop=document.getElementById('detailBackdrop');
-let detailExs=[];        // 当前弹窗的例题数组
+let detailExs=[];        // 当前弹窗的例题数组（经试卷筛选）
+let detailAllExs=[];     // 当前节点全部例题（未筛选，供筛选器统计）
 let activeExIdx=-1;      // 当前激活的题索引
+let detailVol='';        // 弹窗内试卷筛选（卷名，''=全部）
 
 function openDetail(n){
   hideHover();
@@ -769,50 +783,73 @@ function openDetail(n){
   const path=[];let cur=n;while(cur){path.unshift(cur.name);cur=cur._parent}
   document.getElementById('detailTitle').textContent=n.name;
   document.getElementById('detailPath').textContent=path.join(' › ');
-  detailExs=nodeExamples(n);
+  detailAllExs=nodeExamples(n);
+  detailVol='';
+  fillDetailVolSelect();
+  applyDetailVol('',false);
+  detailBackdrop.style.display='block';
+  detailBox.classList.add('open');
+}
+
+/* 统计当前节点全部例题的卷名，填充标题栏试卷筛选器 */
+function fillDetailVolSelect(){
+  const sel=document.getElementById('detailVolSelect');if(!sel)return;
+  const cnt={};
+  detailAllExs.forEach(e=>{const v=volOf(e&&e.src)||'（未标卷）';cnt[v]=(cnt[v]||0)+1});
+  const vols=Object.keys(cnt).sort();
+  sel.innerHTML='<option value="">全部试卷 · '+detailAllExs.length+' 题</option>'
+    +vols.map(v=>`<option value="${esc(v)}">${esc(v)}（${cnt[v]}）</option>`).join('');
+  sel.value='';
+  fitVolSelect(sel);
+}
+
+/* 应用弹窗内试卷筛选，重建左栏列表并激活首题 */
+function applyDetailVol(v,doScroll=true){
+  detailVol=v||'';
+  detailExs=detailVol
+    ? detailAllExs.filter(e=>(volOf(e&&e.src)||'（未标卷）')===detailVol)
+    : detailAllExs.slice();
   activeExIdx=-1;
-  const body=document.getElementById('detailBody');
-  const nav=document.getElementById('exNav');
   const ph=document.getElementById('ansPlaceholder');
   const panel=document.getElementById('ansPanel');
   ph.style.display='';panel.innerHTML='';
+  renderDetailList();
+  if(detailExs.length){ activateEx(0,doScroll); }
+}
+
+/* 渲染左栏题目列表：无序号、无题号导航，卷名即题目标识 */
+function renderDetailList(){
+  const body=document.getElementById('detailBody');
+  const ph=document.getElementById('ansPlaceholder');
   if(!detailExs.length){
-    nav.innerHTML='';
     ph.style.display='none';
-    body.innerHTML='<div class="ex-empty">该节点暂无命中当前筛选的例题。</div>';
-  }else{
-    // 题号导航条
-    nav.innerHTML=detailExs.map((ex,i)=>`<button class="ex-nav-i" data-nav="${i}" type="button" title="第 ${i+1} 题">${i+1}</button>`).join('');
-    // 左栏卡片（答案区已移至右栏）
-    body.innerHTML=detailExs.map((ex,i)=>{
-      const uid='ex'+i;
-      const ans=(ex.ans||'').trim();
-      const multi=ans.length>1;
-      const optsArr=ex.opts||[];
-      const opts=optsArr.map((o,oi)=>`<div class="ex-opt" data-key="${String.fromCharCode(65+oi)}" data-uid="${uid}">${esc(o)}</div>`).join('');
-      const tag=ex.hit===true?'<span class="ex-tag right">✅ 做对</span>':(ex.hit===false?'<span class="ex-tag wrong">❌ 做错</span>':'');
-      const mask=/季/.test(ex.src||'')?'模考':'真题';
-      const fig=ex.img?`<div class="ex-fig" data-zoom="${esc(ex.img)}"><img src="${esc(ex.img)}" alt="例题配图" loading="lazy"><span class="zoom-hint">🔍 点击放大</span></div>`:'';
-      const hasAns=!!(ex.ans||ex.solve||ex.analysis||(ex.steps&&ex.steps.length)||(ex.exclude&&ex.exclude.length));
-      return `<div class="ex-card" data-idx="${i}" data-uid="${uid}" data-ans="${esc(ans)}" data-multi="${multi?1:0}">
-        <div class="ex-meta"><span class="ex-num">第 ${i+1} 题</span><span class="ex-src">📎 ${esc(mask)} · ${esc(ex.src||'')}</span>${tag}</div>
-        <div class="ex-q">${esc(ex.q||'')}</div>
-        ${fig}
-        ${opts?`<div class="ex-opts">${opts}</div>`:''}
-        <div class="quiz-fb" id="${uid}-fb"></div>
-        <div class="ex-actions">
-          ${hasAns?`<button class="ex-btn ans-open" data-answer="${i}" type="button">📖 看解析</button>`:''}
-          ${optsArr.length?`<button class="ex-btn quiz-start" data-quiz="${uid}" type="button">🧪 练习</button>`:''}
-          ${multi?`<button class="ex-btn quiz-submit" data-submit="${uid}" type="button" style="display:none">提交答案</button>`:''}
-        </div>
-      </div>`;
-    }).join('');
-    bindDetailEvents(body,nav);
+    body.innerHTML='<div class="ex-empty">该试卷下暂无例题。</div>';
+    return;
   }
-  detailBackdrop.style.display='block';
-  detailBox.classList.add('open');
-  /* 打开即显示解析：默认激活第一题，无需再点「看解析」；无 solution 时 renderAns 自动回退旧 Tab */
-  if(detailExs.length){ activateEx(0,false); }
+  body.innerHTML=detailExs.map((ex,i)=>{
+    const uid='ex'+i;
+    const ans=(ex.ans||'').trim();
+    const multi=ans.length>1;
+    const optsArr=ex.opts||[];
+    const opts=optsArr.map((o,oi)=>`<div class="ex-opt" data-key="${String.fromCharCode(65+oi)}" data-uid="${uid}">${esc(o)}</div>`).join('');
+    const tag=ex.hit===true?'<span class="ex-tag right">✅ 做对</span>':(ex.hit===false?'<span class="ex-tag wrong">❌ 做错</span>':'');
+    const mask=/季/.test(ex.src||'')?'模考':'真题';
+    const fig=ex.img?`<div class="ex-fig" data-zoom="${esc(ex.img)}"><img src="${esc(ex.img)}" alt="例题配图" loading="lazy"><span class="zoom-hint">🔍 点击放大</span></div>`:'';
+    const hasAns=!!(ex.ans||ex.solve||ex.analysis||(ex.steps&&ex.steps.length)||(ex.exclude&&ex.exclude.length));
+    return `<div class="ex-card" data-idx="${i}" data-uid="${uid}" data-ans="${esc(ans)}" data-multi="${multi?1:0}">
+      <div class="ex-meta"><span class="ex-src">📎 ${esc(mask)} · ${esc(ex.src||'')}</span>${tag}</div>
+      <div class="ex-q">${esc(ex.q||'')}</div>
+      ${fig}
+      ${opts?`<div class="ex-opts">${opts}</div>`:''}
+      <div class="quiz-fb" id="${uid}-fb"></div>
+      <div class="ex-actions">
+        ${hasAns?`<button class="ex-btn ans-open" data-answer="${i}" type="button">📖 看解析</button>`:''}
+        ${optsArr.length?`<button class="ex-btn quiz-start" data-quiz="${uid}" type="button">🧪 练习</button>`:''}
+        ${multi?`<button class="ex-btn quiz-submit" data-submit="${uid}" type="button" style="display:none">提交答案</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  bindDetailEvents(body);
 }
 
 /* 朱批·审题台：v2 五块结构化解析 HTML */
@@ -909,17 +946,13 @@ function activateEx(i,doScroll=true){
   activeExIdx=i;
   const body=document.getElementById('detailBody');
   body.querySelectorAll('.ex-card').forEach(c=>c.classList.toggle('active',+c.dataset.idx===i));
-  const nav=document.getElementById('exNav');
-  nav.querySelectorAll('.ex-nav-i').forEach(b=>b.classList.toggle('active',+b.dataset.nav===i));
   renderAns(i);
   if(doScroll===false)return;
   const card=body.querySelector(`.ex-card[data-idx="${i}"]`);
   if(card)card.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 /* 弹窗内事件绑定：看解析 / 练习判题(自动展开右栏) / 配图放大 */
-function bindDetailEvents(body,nav){
-  /* 题号导航切题 */
-  nav.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>activateEx(+b.dataset.nav));
+function bindDetailEvents(body){
   /* 看解析按钮 → 激活右栏 */
   body.querySelectorAll('[data-answer]').forEach(btn=>{
     btn.onclick=()=>activateEx(+btn.dataset.answer);
@@ -1158,6 +1191,9 @@ function applyVol(v){
 }
 const volSelect=document.getElementById('volSelect');
 if(volSelect) volSelect.addEventListener('change',()=>applyVol(volSelect.value));
+/* 弹窗标题栏试卷筛选器 */
+const detailVolSelect=document.getElementById('detailVolSelect');
+if(detailVolSelect) detailVolSelect.addEventListener('change',()=>applyDetailVol(detailVolSelect.value));
 
 /* 便签（localStorage 持久化） */
 const NOTE_KEY='mm_opt_notes';
