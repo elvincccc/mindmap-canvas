@@ -235,16 +235,16 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .zp-mode .ex-tag.right{background:#1E7A5A;color:#fff;border:none;border-radius:2px}
 .zp-mode .ex-tag.wrong{background:#C4362A;color:#fff;border:none;border-radius:2px}
 .zp-mode .ex-q{font-size:14px;line-height:1.7;color:#1B2430;font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif}
-.zp-mode .ex-opts{gap:7px}
-.zp-mode .ex-opt{position:relative;padding:9px 12px 9px 38px;border-radius:3px;background:#FBF9F3;border-color:#D8D0BE;color:#1B2430;font-size:13.5px}
-.zp-mode .ex-opt::before{content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;border-radius:50%;border:1.5px solid #45607D;background:#fff}
-.zp-mode .ex-opt.pickable{cursor:pointer;border-color:#D8D0BE}
-.zp-mode .ex-opt.pickable:hover{background:#fff;border-color:#45607D}
-.zp-mode .ex-opt.sel{border-color:#C4362A;background:#FBF0EC;color:#1B2430}
+.zp-mode .ex-opts{gap:1px;margin-top:8px}
+.zp-mode .ex-opt{position:relative;padding:7px 12px 7px 38px;border:none;border-left:2px solid transparent;border-radius:0;background:transparent;color:#1B2430;font-size:13.5px;line-height:1.6;transition:background .15s}
+.zp-mode .ex-opt::before{content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;border-radius:50%;border:1.5px solid #8a9bab;background:#fff}
+.zp-mode .ex-opt.pickable{cursor:pointer}
+.zp-mode .ex-opt.pickable:hover{background:rgba(69,96,125,.06)}
+.zp-mode .ex-opt.sel{border-left-color:#C4362A;background:rgba(196,54,42,.045);color:#1B2430}
 .zp-mode .ex-opt.sel::before{border-color:#C4362A;background:radial-gradient(circle,#C4362A 0 5px,transparent 6px)}
-.zp-mode .ex-opt.correct{border-color:#1E7A5A;background:#EAF4EF;color:#1E7A5A;font-weight:700}
+.zp-mode .ex-opt.correct{border-left-color:#1E7A5A;background:rgba(30,122,90,.05);color:#1E7A5A;font-weight:700}
 .zp-mode .ex-opt.correct::before{border-color:#1E7A5A;background:radial-gradient(circle,#1E7A5A 0 5px,transparent 6px)}
-.zp-mode .ex-opt.wrong{border-color:#C4362A;background:#FBF0EC;color:#C4362A;text-decoration:line-through}
+.zp-mode .ex-opt.wrong{border-left-color:#C4362A;background:rgba(196,54,42,.03);color:#C4362A;text-decoration:line-through}
 .zp-mode .ex-opt.wrong::before{border-color:#C4362A;background:radial-gradient(circle,#C4362A 0 5px,transparent 6px)}
 .zp-mode .ex-btn{font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;font-weight:800;border-radius:3px}
 .zp-mode .ans-open{background:transparent;color:#1B2430;border-color:#1B2430}
