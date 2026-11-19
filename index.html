@@ -147,10 +147,16 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 #detailBox.zp-mode .detail-vol-select{background:rgba(244,240,230,.09);color:#F4F0E6;border-color:rgba(196,54,42,.55)}
 #detailBox.zp-mode .detail-vol-select:hover,#detailBox.zp-mode .detail-vol-select:focus{border-color:#C4362A;background:rgba(196,54,42,.15)}
 #detailBox.zp-mode .detail-vol-select option{background:#1B2430;color:#F4F0E6}
-/* 左右分栏：左做题区 / 右解析区 */
+/* 左右分栏：左做题区 / 右解析区（宽度可由分隔条拖动调整） */
 #detailMain{flex:1;min-height:0;display:flex;overflow:hidden}
-#detailLeft{flex:1 1 50%;min-width:0;overflow-y:auto;padding:2px 16px 16px 18px;scrollbar-width:thin}
-#detailRight{flex:1 1 50%;min-width:0;overflow-y:auto;padding:14px 18px 18px;border-left:1px solid #1e293b;background:rgba(2,6,23,.32);scrollbar-width:thin}
+#detailLeft{flex:0 0 var(--left-pct,50%);min-width:0;overflow-y:auto;padding:2px 16px 16px 18px;scrollbar-width:thin}
+#detailRight{flex:1 1 auto;min-width:0;overflow-y:auto;padding:14px 18px 18px;background:rgba(2,6,23,.32);scrollbar-width:thin}
+/* 可拖动分隔条 */
+#detailSplitter{flex:0 0 9px;cursor:col-resize;position:relative;z-index:3;background:transparent;touch-action:none}
+#detailSplitter::before{content:"";position:absolute;left:3px;right:3px;top:0;bottom:0;background:#1e293b;transition:background .15s}
+#detailSplitter::after{content:"⁞";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#64748b;font-size:15px;line-height:1;background:rgba(15,23,42,.98);padding:6px 0;border-radius:3px;transition:color .15s}
+#detailSplitter:hover::before,#detailSplitter.dragging::before{background:#6366f1}
+#detailSplitter:hover::after,#detailSplitter.dragging::after{color:#c7d2fe}
 .ex-card{padding:14px 0;border-bottom:1px solid #1e293b;transition:background .15s}
 .ex-card:last-child{border-bottom:none}
 .ex-card.active{background:linear-gradient(90deg,rgba(99,102,241,.10),transparent);border-radius:8px;padding-left:10px;margin-left:-10px}
@@ -220,8 +226,11 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 @media (max-width:900px),(max-width:1100px) and (orientation:portrait){
   #detailBox{height:94vh}
   #detailMain{flex-direction:column}
-  #detailLeft{flex:0 0 50%;min-height:0;width:100%;border-left:none;border-bottom:1px solid #1e293b}
-  #detailRight{flex:1 1 50%;min-height:0;width:100%;border-left:none}
+  #detailLeft{flex:0 0 var(--left-pct,50%);min-height:0;width:100%;border-bottom:none}
+  #detailRight{flex:1 1 auto;min-height:0;width:100%}
+  #detailSplitter{flex:0 0 9px;cursor:row-resize;width:100%}
+  #detailSplitter::before{left:0;right:0;top:3px;bottom:3px}
+  #detailSplitter::after{content:"⁝";transform:translate(-50%,-50%) rotate(90deg)}
   .ans-ph{min-height:120px}
 }
 
@@ -269,7 +278,11 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .zp-mode .quiz-fb.no{color:#C4362A;background:#FBF0EC;border-color:#C4362A}
 .zp-mode .quiz-fb .ansline{color:#45607D}
 .zp-mode .ex-fig{border-color:#D8D0BE;background:#fff;border-radius:3px}
-#detailRight.zp-side{background:#FBF8F0;border-left:1px solid #D8D0BE}
+#detailRight.zp-side{background:#FBF8F0}
+.zp-mode #detailSplitter::before{background:#D8D0BE}
+.zp-mode #detailSplitter::after{color:#a89e8c;background:#F4F0E6}
+.zp-mode #detailSplitter:hover::before,.zp-mode #detailSplitter.dragging::before{background:#C4362A}
+.zp-mode #detailSplitter:hover::after,.zp-mode #detailSplitter.dragging::after{color:#C4362A}
 .zp-mode .ans-ph{color:#8a8377}
 .zp-mode .ans-ph-t{color:#45607D}
 .zp-mode .ans-ph-d b{color:#C4362A}
@@ -446,6 +459,7 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
     <section id="detailLeft">
       <div id="detailBody"></div>
     </section>
+    <div id="detailSplitter" title="拖动调整题目 / 解析宽度"></div>
     <section id="detailRight">
       <div id="ansPlaceholder" class="ans-ph">
         <div class="ans-ph-ico">📖</div>
@@ -861,30 +875,30 @@ function renderZpSolution(ex,i){
   h+=`<div class="zp-hero"><div class="zp-seal">${esc(v.answer||ex.ans||'')}</div><div class="zp-hero-txt">
     <div class="zp-hero-top"><span class="qn">第 ${i+1} 题</span><span class="src">${esc(ex.src||'')}</span>${tag}</div>
     <div class="zp-oneline">${esc(v.oneLiner||'')}</div></div></div>`;
-  // ② 步骤 / 错因 双栏
+  // ② 深度解析笺（提到最前：信号/本质 → 通式 → 易错）
+  h+='<div class="zp-deep"><div class="zp-sec-hd">壹 · 深度解析</div><div class="zp-facts">';
+  [['信号',ins.signal],['本质',ins.essence]].forEach(r=>{if(r[1])h+=`<div class="zp-fact"><b>${r[0]}</b>${esc(r[1])}</div>`});
+  h+='</div>';
+  if(ins.formula&&ins.formula.length){h+='<div class="zp-chiprow"><span class="lead">通式</span>'+ins.formula.map(x=>`<span class="zp-chip">${esc(x)}</span>`).join('')+'</div>'}
+  if(ins.pitfalls&&ins.pitfalls.length){h+='<div class="zp-chiprow"><span class="lead warn">易错</span>'+ins.pitfalls.map(x=>`<span class="zp-chip warn">${esc(x)}</span>`).join('')+'</div>'}
+  h+='</div>';
+  // ③ 考场策略（最优解为主，其余小字）
+  h+=`<div class="zp-strategy"><div class="zp-bestway"><b>贰 · 最优解</b>${esc(stg.bestWay||'-')}</div>
+    <div class="zp-stg-meta"><span><b>取舍</b>${esc(stg.shouldDo||'-')}</span><span><b>耗时</b>${esc(stg.timeCost||'-')}</span><span><b>陷阱</b>${esc(stg.traps||'-')}</span></div></div>`;
+  // ④ 步骤 / 错因 双栏（移到最后）
   h+='<div class="zp-cols"><div>';
-  h+=`<div class="zp-col-hd"><span class="num">壹</span>解题步骤<span class="cnt">${(v.steps||[]).length} STEPS</span></div><div class="zp-steps">`;
+  h+=`<div class="zp-col-hd"><span class="num">叁</span>解题步骤<span class="cnt">${(v.steps||[]).length} STEPS</span></div><div class="zp-steps">`;
   (v.steps||[]).forEach(st=>{
     h+=`<div class="zp-step ${st.key?'key':''}"><div class="dot">${st.n}</div>
       <div class="act">${esc(st.action||'')}${st.key?'<span class="zp-keytag">关键步</span>':''}</div>
       <div class="body"><span class="ln"><b>为什么</b>${esc(st.why||'')}</span><span class="ln"><b>内容</b>${esc(st.detail||'')}</span></div></div>`;
   });
   h+='</div></div><div>';
-  h+=`<div class="zp-col-hd"><span class="num">贰</span>错因<span class="cnt">只看错项</span></div><div class="zp-errs">`;
+  h+=`<div class="zp-col-hd"><span class="num">肆</span>错因<span class="cnt">只看错项</span></div><div class="zp-errs">`;
   (v.errors||[]).forEach(e=>{
     h+=`<div class="zp-err"><div class="h"><span class="k">${esc(e.o||'')}</span><span class="ty">${esc(e.type||'')}</span></div><div class="why">${esc(e.why||'')}</div></div>`;
   });
   h+='</div></div></div>';
-  // ③ 深度解析笺（上下排布）
-  h+='<div class="zp-deep"><div class="zp-sec-hd">叁 · 深度解析</div><div class="zp-facts">';
-  [['信号',ins.signal],['本质',ins.essence]].forEach(r=>{if(r[1])h+=`<div class="zp-fact"><b>${r[0]}</b>${esc(r[1])}</div>`});
-  h+='</div>';
-  if(ins.formula&&ins.formula.length){h+='<div class="zp-chiprow"><span class="lead">通式</span>'+ins.formula.map(x=>`<span class="zp-chip">${esc(x)}</span>`).join('')+'</div>'}
-  if(ins.pitfalls&&ins.pitfalls.length){h+='<div class="zp-chiprow"><span class="lead warn">易错</span>'+ins.pitfalls.map(x=>`<span class="zp-chip warn">${esc(x)}</span>`).join('')+'</div>'}
-  h+='</div>';
-  // ④ 考场策略（最优解为主，其余小字）
-  h+=`<div class="zp-strategy"><div class="zp-bestway"><b>最优解</b>${esc(stg.bestWay||'-')}</div>
-    <div class="zp-stg-meta"><span><b>取舍</b>${esc(stg.shouldDo||'-')}</span><span><b>耗时</b>${esc(stg.timeCost||'-')}</span><span><b>陷阱</b>${esc(stg.traps||'-')}</span></div></div>`;
   h+='</div>';
   return h;
 }
@@ -1021,6 +1035,49 @@ lb.querySelector('.lb-close').onclick=closeLightbox;
 function closeDetail(){ detailBox.classList.remove('open'); detailBackdrop.style.display='none'; }
 document.getElementById('detailClose').onclick=closeDetail;
 detailBackdrop.onclick=closeDetail;
+
+/* ---- 题目 / 解析 分隔条拖动（宽屏左右、窄屏上下）---- */
+(function(){
+  const main=document.getElementById('detailMain');
+  const splitter=document.getElementById('detailSplitter');
+  if(!main||!splitter)return;
+  let active=false;
+  const MIN=15,MAX=85;
+  function isColumn(){return getComputedStyle(main).flexDirection==='column'}
+  function pctFromPoint(cx,cy){
+    const r=main.getBoundingClientRect();
+    const col=isColumn();
+    const pos=col?cy-r.top:cx-r.left;
+    const size=col?r.height:r.width;
+    return Math.min(MAX,Math.max(MIN,pos/size*100));
+  }
+  function onMove(e){
+    if(!active)return;
+    e.preventDefault();
+    const p=e.touches?e.touches[0]:e;
+    main.style.setProperty('--left-pct',pctFromPoint(p.clientX,p.clientY).toFixed(2)+'%');
+  }
+  function onEnd(){
+    if(!active)return;
+    active=false;
+    splitter.classList.remove('dragging');
+    document.body.style.userSelect='';
+  }
+  splitter.addEventListener('mousedown',e=>{
+    active=true;splitter.classList.add('dragging');
+    document.body.style.userSelect='none';e.preventDefault();
+  });
+  splitter.addEventListener('touchstart',e=>{
+    active=true;splitter.classList.add('dragging');
+    document.body.style.userSelect='none';e.preventDefault();
+  },{passive:false});
+  window.addEventListener('mousemove',onMove);
+  window.addEventListener('touchmove',onMove,{passive:false});
+  window.addEventListener('mouseup',onEnd);
+  window.addEventListener('touchend',onEnd);
+  // 双击分隔条恢复 50/50
+  splitter.addEventListener('dblclick',()=>main.style.setProperty('--left-pct','50%'));
+})();
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(lb.classList.contains('open')){closeLightbox();return}
