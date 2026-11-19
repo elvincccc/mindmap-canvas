@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="260" viewBox="0 0 400 260" font-family="sans-serif">
+<rect width="400" height="260" fill="#0b1220" rx="12"/>
+<polygon points="70,40 320,50 340,220 50,200" fill="#fef3c7" stroke="#94a3b8" stroke-width="2"/>
+<line x1="70" y1="40" x2="340" y2="220" stroke="#64748b" stroke-width="1.4" stroke-dasharray="5 4"/>
+<line x1="320" y1="50" x2="50" y2="200" stroke="#64748b" stroke-width="1.4" stroke-dasharray="5 4"/>
+<circle cx="195" cy="130" r="3" fill="#f59e0b"/>
+<text x="168" y="88" font-size="17" fill="#166534" font-weight="bold">青菜</text>
+<text x="243" y="155" font-size="17" fill="#dc2626" font-weight="bold">番茄</text>
+<text x="172" y="195" font-size="17" fill="#7c3aed" font-weight="bold">茄子</text>
+<text x="58" y="150" font-size="17" fill="#b45309" font-weight="bold">毛豆</text>
+<text x="60" y="248" font-size="11" fill="#64748b">示意图 · 对角线交点分四块，对角两块面积乘积相等</text>
+</svg>

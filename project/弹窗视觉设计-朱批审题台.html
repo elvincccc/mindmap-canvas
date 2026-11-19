@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>弹窗视觉设计 · 朱批审题台</title>
+<style>
+:root{
+  --paper:#F4F0E6; --ink:#1B2430; --vermilion:#C4362A; --steel:#45607D;
+  --jade:#1E7A5A; --rule:#D8D0BE; --mark:#F3E3A3; --strategy:#F7EBE2;
+  --serif:Georgia,"Times New Roman",serif;
+  --sans:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#0F141D;color:#e8e6df;font-family:var(--sans);line-height:1.6;padding:30px 18px 70px;
+  background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.025) 1px,transparent 0);background-size:22px 22px}
+.wrap{max-width:1240px;margin:0 auto}
+
+/* ============ 设计规格板 ============ */
+.spec{background:#161C27;border:1px solid #262F3E;border-radius:14px;padding:26px 30px;margin-bottom:30px}
+.spec-top{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:1px solid #262F3E;padding-bottom:18px;margin-bottom:22px}
+.spec-eyebrow{font-size:11px;font-weight:800;letter-spacing:.22em;color:#C4362A;text-transform:uppercase}
+.spec h1{margin:4px 0 0;font-size:27px;letter-spacing:.02em;font-weight:800;color:#f4f1ea}
+.spec h1 em{font-family:var(--serif);font-style:italic;color:#d9a441;font-weight:400}
+.spec-desc{margin-left:auto;max-width:560px;font-size:12.5px;color:#9aa6b8;line-height:1.75}
+.spec-desc b{color:#e2c98a;font-weight:700}
+.spec-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:26px}
+.spec h2{font-size:11px;font-weight:800;letter-spacing:.16em;color:#7f8da3;margin:0 0 13px;text-transform:uppercase}
+/* 色卡 */
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sw{border-radius:8px;overflow:hidden;border:1px solid #2a3444}
+.sw .chip{height:42px}
+.sw .meta{padding:6px 7px;background:#1b2330}
+.sw .nm{font-size:10.5px;font-weight:800;color:#dfe5ef}
+.sw .hx{font-family:var(--mono);font-size:9.5px;color:#8494ab;margin-top:1px}
+.sw .use{font-size:9px;color:#66748a;margin-top:2px;line-height:1.3}
+/* 字体 */
+.type-row{margin-bottom:11px}
+.type-row .lb{font-size:9.5px;letter-spacing:.12em;color:#66748a;margin-bottom:3px;font-weight:700}
+.type-serif{font-family:var(--serif);font-size:25px;color:#e8c777;letter-spacing:.01em;line-height:1.2}
+.type-sans{font-size:14px;font-weight:700;color:#e8e6df}
+.type-label{font-size:11px;font-weight:800;letter-spacing:.18em;color:#9fb0c8;text-transform:uppercase}
+.type-mono{font-family:var(--mono);font-size:12px;color:#8fd0b4}
+/* 版式+自检 */
+.principles{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.principles li{font-size:11.5px;color:#aab6c8;padding-left:16px;position:relative;line-height:1.5}
+.principles li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border:1.5px solid #C4362A;transform:rotate(45deg)}
+.selfcheck{margin-top:12px;padding:10px 12px;background:#122018;border:1px solid #1e3b2c;border-radius:8px;font-size:10.5px;color:#9fd8bb;line-height:1.65}
+.selfcheck b{color:#6ee7a8}
+
+/* ============ 弹窗舞台 ============ */
+.stage-hd{display:flex;align-items:center;gap:12px;margin:0 2px 12px}
+.stage-hd .tag{font-size:10px;font-weight:800;letter-spacing:.16em;color:#7f8da3}
+.qswitch{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.qswitch button{font-family:var(--sans);font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:6px;cursor:pointer;
+  background:#1a2230;color:#9aa6b8;border:1px solid #2b3648;transition:.15s}
+.qswitch button:hover{border-color:#C4362A;color:#f0c9c4}
+.qswitch button.on{background:#C4362A;color:#fff;border-color:#C4362A}
+
+/* ---- 弹窗本体（纸质） ---- */
+.popup{width:min(1180px,97vw);height:min(840px,86vh);min-height:640px;margin:0 auto;background:var(--paper);
+  border-radius:5px;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.4);
+  background-image:radial-gradient(circle at 1px 1px,rgba(27,36,48,.035) 1px,transparent 0);background-size:20px 20px}
+.popup header{flex:none;display:flex;align-items:center;gap:12px;padding:11px 20px;background:#1B2430;color:#F4F0E6;
+  border-bottom:3px solid var(--vermilion)}
+.popup header .seal-mini{width:24px;height:24px;border:1.5px solid #C4362A;color:#e8735f;font-family:var(--serif);
+  font-size:14px;font-weight:700;display:grid;place-items:center;transform:rotate(-4deg);border-radius:2px}
+.popup header .ttl{font-size:13px;font-weight:800;letter-spacing:.03em}
+.popup header .path{font-size:10.5px;color:#9fb0c8;margin-left:6px}
+.popup header .no{margin-left:auto;font-family:var(--serif);font-size:12px;color:#c9b98a;letter-spacing:.05em}
+.pbody{flex:1;display:flex;min-height:0}
+/* 左栏：做题区 */
+.left{flex:0 0 41%;min-width:0;display:flex;flex-direction:column;padding:16px 20px;border-right:1px solid var(--rule);min-height:0}
+.nav{display:flex;gap:6px;flex:none;margin-bottom:12px}
+.nav .q{width:26px;height:26px;border:1px solid var(--rule);border-radius:3px;background:#fff;color:var(--steel);
+  font-family:var(--serif);font-size:13px;font-weight:700;display:grid;place-items:center;cursor:pointer;transition:.15s}
+.nav .q.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.nav .q.done{border-color:var(--vermilion);color:var(--vermilion)}
+.qmeta{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--vermilion);text-transform:uppercase;margin-bottom:7px}
+.qtext{font-size:13.5px;line-height:1.85;color:var(--ink);margin:0 0 14px}
+.qtext .hl{background:var(--mark);padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.opts{display:grid;gap:8px}
+.opt{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border:1px solid var(--rule);border-radius:3px;
+  background:#FBF9F3;cursor:pointer;transition:.15s}
+.opt:hover{border-color:var(--steel)}
+.opt .bubble{flex:none;width:17px;height:17px;border-radius:50%;border:1.5px solid var(--steel);margin-top:1px;
+  display:grid;place-items:center;transition:.15s}
+.opt .bubble::after{content:"";width:7px;height:7px;border-radius:50%;background:transparent;transition:.15s}
+.opt.sel{border-color:var(--vermilion);background:#FBF0EC}
+.opt.sel .bubble{border-color:var(--vermilion)}
+.opt.sel .bubble::after{background:var(--vermilion)}
+.opt .lt{font-family:var(--serif);font-weight:700;color:var(--steel);font-size:14px;margin-right:7px}
+.opt.sel .lt{color:var(--vermilion)}
+.opt .tx{font-size:12.5px;color:var(--ink);line-height:1.6}
+.acts{display:flex;gap:9px;margin-top:16px}
+.btn{font-family:var(--sans);font-size:12px;font-weight:800;padding:9px 20px;border-radius:3px;cursor:pointer;transition:.15s}
+.btn-primary{background:var(--vermilion);color:#fff;border:1px solid var(--vermilion)}
+.btn-primary:hover{background:#a82d23}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn-ghost:hover{background:var(--ink);color:var(--paper)}
+/* 右栏：解析区 */
+.right{flex:1;min-width:0;display:flex;flex-direction:column;background:#FBF8F0;padding:14px 18px;min-height:0;overflow-y:auto}
+.section-hd{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.13em;color:var(--steel);
+  text-transform:uppercase;margin:0 0 8px}
+.section-hd::after{content:"";flex:1;height:1px;background:var(--rule)}
+/* 答案印章条 */
+.ans-hero{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px double var(--rule);margin-bottom:12px}
+.seal{flex:none;width:60px;height:60px;border:3px double var(--vermilion);color:var(--vermilion);border-radius:3px;
+  font-family:var(--serif);font-size:38px;font-weight:700;display:grid;place-items:center;transform:rotate(-3deg);
+  box-shadow:inset 0 0 0 2px var(--paper);line-height:1}
+.hero-txt{min-width:0}
+.hero-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.hero-top .qn{font-family:var(--serif);font-size:14px;color:var(--steel)}
+.hero-top .src{font-size:10px;color:#8a8f98}
+.tag-ok,.tag-no{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:2px;letter-spacing:.05em}
+.tag-no{background:var(--vermilion);color:#fff}
+.tag-ok{background:var(--jade);color:#fff}
+.oneline{font-size:13px;font-weight:700;color:var(--ink);line-height:1.5}
+.oneline::before{content:"「";color:var(--vermilion)}
+.oneline::after{content:"」";color:var(--vermilion)}
+/* 双栏 */
+.cols{display:grid;grid-template-columns:1.9fr 1fr;gap:16px;margin-bottom:12px;min-height:0}
+.col-hd{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:var(--ink);margin:0 0 8px;
+  padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.col-hd .num{font-family:var(--serif);color:var(--vermilion);font-size:13px}
+.col-hd .cnt{margin-left:auto;font-family:var(--mono);font-size:9px;color:#9a9ea6;font-weight:400}
+/* 步骤时间轴 */
+.steps{position:relative;display:grid;gap:7px}
+.steps::before{content:"";position:absolute;left:10px;top:8px;bottom:8px;width:1px;background:var(--rule)}
+.step{position:relative;padding-left:28px}
+.step .dot{position:absolute;left:0;top:1px;width:21px;height:21px;border-radius:50%;background:var(--paper);
+  border:1.5px solid var(--steel);color:var(--steel);font-family:var(--serif);font-size:11px;font-weight:700;
+  display:grid;place-items:center;z-index:1}
+.step.key .dot{background:var(--vermilion);border-color:var(--vermilion);color:#fff;
+  box-shadow:0 0 0 3px rgba(196,54,42,.13)}
+.step .act{font-size:13px;font-weight:800;color:var(--ink);display:block}
+.step.key .act{color:var(--vermilion)}
+.step .keytag{font-size:8.5px;font-weight:800;color:#fff;background:var(--vermilion);padding:1px 6px;border-radius:2px;margin-left:6px;letter-spacing:.05em}
+.step .body{font-size:10px;line-height:1.5;color:#7a828e;margin-top:4px;padding-left:0;display:grid;gap:2px}
+.step .body .ln{display:block}
+.step .body b{display:inline-block;min-width:34px;color:var(--steel);font-weight:700;font-size:9px;letter-spacing:.04em}
+.step.key .body b{color:var(--vermilion)}
+/* 错因（降权：去红底改浅笺，辅助层级） */
+.errs{display:grid;gap:4px}
+.err{background:#F7F4EC;padding:4px 9px;border-left:2px solid #cdbfa8;border-radius:0 2px 2px 0}
+.err .h{display:flex;align-items:center;gap:7px}
+.err .k{font-family:var(--serif);font-size:12px;font-weight:700;color:#8a8377}
+.err .ty{font-size:8.5px;font-weight:700;color:#9a8f7e;background:#ece5d6;padding:0 5px;border-radius:2px}
+.err .why{font-size:10px;color:#7a756d;line-height:1.45}
+/* 深解笺：上下排布，不再三列并列 */
+.deep{background:#fff;border:1px solid var(--rule);border-top:2px solid var(--steel);border-radius:2px;
+  padding:9px 13px;margin-bottom:9px}
+.facts{display:grid;gap:6px;margin-bottom:7px}
+.fact{display:flex;gap:9px;font-size:10.5px;color:#4a535e;line-height:1.5}
+.fact b{flex:0 0 38px;font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--steel)}
+.chiprow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chiprow .lead{font-size:9px;font-weight:800;color:var(--steel);letter-spacing:.1em;flex:none}
+.chiprow .lead.warn{color:#9a6b12}
+.chip{font-family:var(--mono);font-size:9.5px;color:#374151;background:#F4F0E6;border:1px solid var(--rule);
+  border-radius:2px;padding:2px 7px}
+.chip.warn{background:#FBF3DA;border-color:#e6cf8a;color:#7a5708;font-family:var(--sans)}
+/* 策略（降权：最优解为主，其余压缩为小字元信息） */
+.strategy{background:var(--strategy);border:1px solid #e5d4c4;border-radius:3px;padding:8px 12px}
+.bestway{font-size:11px;color:var(--ink);line-height:1.5}
+.bestway b{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--vermilion);margin-right:8px}
+.stg-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:5px;padding-top:5px;border-top:1px dashed #e5d4c4;
+  font-size:9px;color:#9c9186}
+.stg-meta b{font-weight:700;color:#8a7f74;margin-right:4px}
+.foot{margin-top:16px;text-align:center;font-size:10px;color:#5a6577;letter-spacing:.05em}
+.foot b{color:#9fb0c8}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== 设计规格板 ===== -->
+  <div class="spec">
+    <div class="spec-top">
+      <div>
+        <div class="spec-eyebrow">Visual Proposal · 例题弹窗</div>
+        <h1>朱批 · <em>审题台</em></h1>
+      </div>
+      <div class="spec-desc">
+        行测是一支笔、一张答题卡、一本翻旧的真题集。把弹窗从<b>深色科技仪表盘</b>还原成一张<b>被朱笔批注过的答案详解卡</b>：宣纸为底、墨字为文、朱砂为断。衬线数字承载印刷质感，朱砂只在「判断」处用力。
+      </div>
+    </div>
+    <div class="spec-grid">
+      <div>
+        <h2>01 / 配色 Token</h2>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <div>
+        <h2>02 / 字体角色</h2>
+        <div class="type-row"><div class="lb">数字 · 题号 · 答案字母 — 衬线（主张核心）</div><div class="type-serif">53 &nbsp; B &nbsp; ① ② ③</div></div>
+        <div class="type-row"><div class="lb">中文正文 — 无衬线</div><div class="type-sans">逐句翻成逆否，反设得矛盾</div></div>
+        <div class="type-row"><div class="lb">区块标签 — 字距拉开</div><div class="type-label">SOLUTION · ERROR · STRATEGY</div></div>
+        <div class="type-row"><div class="lb">通式 / 公式 — 等宽</div><div class="type-mono">只有A才B ⇒ B→A</div></div>
+      </div>
+      <div>
+        <h2>03 / 版式原则 & 自检</h2>
+        <ul class="principles">
+          <li>圆角 3px + 1px 实线，印刷卡片而非 SaaS 圆角</li>
+          <li>重点做大：答案朱印 + 步骤主干 + 信号/本质/通式/易错</li>
+          <li>非重点降权：错因改浅笺、定位删（header 已承载）、取舍耗时压成小字</li>
+          <li>步骤「做什么」为主干，为什么/内容换行作子层</li>
+          <li>朱砂只标「判断」，其余留给纸与墨</li>
+        </ul>
+        <div class="selfcheck">
+          <b>自检通过</b> · 母题源于考试文化，非通用模板；刻意避开「奶油底+衬线大标题+陶土色」（底为低饱和暖灰、衬线仅用于数字、主色朱砂）；彻底弃用深色仪表盘；正文对比度 &gt; 7:1。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 弹窗展示 ===== -->
+  <div class="stage-hd">
+    <span class="tag">LIVE PREVIEW · 真实题目数据</span>
+    <div class="qswitch" id="qswitch"></div>
+  </div>
+
+  <div class="popup">
+    <header>
+      <span class="seal-mini">批</span>
+      <span class="ttl">节点详情</span>
+      <span class="path" id="hpath">判断推理 › 逻辑判断 › 分析推理</span>
+      <span class="no">MODERN EXAM · NOTE No.<span id="hno">03</span></span>
+    </header>
+    <div class="pbody">
+      <section class="left">
+        <div class="nav" id="qnav"></div>
+        <div class="qmeta">QUESTION · 题干</div>
+        <p class="qtext" id="qtext"></p>
+        <div class="opts" id="opts"></div>
+        <div class="acts">
+          <button class="btn btn-primary" id="btnAns">看解析</button>
+          <button class="btn btn-ghost" id="btnPractice">练习模式</button>
+        </div>
+      </section>
+      <section class="right" id="right"></section>
+    </div>
+  </div>
+  <div class="foot">设计提案 <b>朱批 · 审题台</b> · 沿用现有弹窗信息与一屏结构，仅重做视觉语言 · 数据为题库真实样例</div>
+
+</div>
+
+<script>
+const DATA = [{"key": "翻译推理·逆否等价", "src": "26年省考35季 第53题", "q": "建设社会主义现代化强国，关键在于科技自立自强。只有加强科技创新、推进科技自立自强，才能在大变局中把握主动而行稳致远。只要加强科技创新、推进科技自立自强，就能在未来发展中抓住先机和占领制高点。要想实现科技自立自强，就必须深入实施创新驱动发展战略。由此可以推出：", "ans": "A", "opts": ["A.只有未能在大变局中把握主动而行稳致远，才会在未来发展中错失先机", "B.除非没有加强科技创新，否则会在大变局中把握主动而行稳致远", "C.如果想建设社会主义现代化强国，就要实现科技自立自强和在未来发展中占领制高点", "D.要想深入实施创新驱动发展战略，就必须加强科技创新、推进科技自立自强"], "solution": {"answer": "A", "oneLiner": "翻成 M→S→P 整体逆否得 ¬P→¬M，A 正是此式", "steps": [{"n": 1, "action": "逐句翻译成箭头", "why": "条件句不翻译就无从推理，必须先把每条关联词变成箭头才有可运算的对象", "detail": "①只有S才M ⇒ M→S；②只要S就P ⇒ S→P；③要想S就必须Q ⇒ S→Q"}, {"n": 2, "action": "串成链条", "why": "单条箭头推不出长结论，首尾相接串起来才有能整体逆否的主链", "detail": "①②承接得主链 M→S→P，③另作支链 S→Q，主链才是选项比对的依据"}, {"n": 3, "action": "锁定A", "why": "A 恰是主链的整体逆否，与原命题逻辑等价，是唯一能被推出的项", "detail": "M→S→P 的整体逆否即 ¬P→¬M，正是「只有未把握主动(¬M)才会错失先机(¬P)」", "key": true}, {"n": 4, "action": "排除BCD", "why": "三项各踩一种典型错误，用规则直接否掉，不必逐字回读题干", "detail": "B 肯后推肯前（S→M）、D 箭头方向颠倒（Q→S）、C 无中生有"}], "errors": [{"o": "B", "type": "肯后推肯前", "why": "题干 M→S，B 写成 S→M"}, {"o": "C", "type": "无中生有", "why": "「关键在于」非条件词"}, {"o": "D", "type": "箭头方向颠倒", "why": "题干 S→Q，D 写成 Q→S"}], "insight": {"position": "判断推理 → 逻辑判断 → 翻译推理 → 逆否等价（多句串链后整体逆否）", "signal": "题干出现「只有…才」「只要…就」「必须/要想…就」「除非…否则」→ 先全翻成箭头、串成链、再谈逆否", "essence": "条件句只有两种有效推理：肯前推肯后、否后推否前；其余方向一律无效，答案必与链条同向或整体逆否", "formula": ["只有A才B ⇒ B→A（后推前，必要）", "只要A就B ⇒ A→B（前推后，充分）", "除非A否则B ⇒ ¬A→B", "串链 X→…→Y ⇒ 整体逆否 ¬Y→¬X"], "pitfalls": ["必要（只有…才）后推前，充分（只要/如果）前推后，二者混用就全盘皆错", "「关键在于/核心是/重要的是」是强调语，不是逻辑关联词，翻成箭头就会误选C"], "strategy": {"shouldDo": "必做", "bestWay": "先把四个关联词一次性全翻成箭头，再拿选项逐一比对，比逐项回读题干快一倍", "timeCost": "约60秒", "traps": "「关键在于」看着像条件词，误翻成「强国→自立自强」就会掉进C的坑"}}}}, {"key": "加强论证·搭桥", "src": "2025广东省考真题 第60题", "q": "某研究者选取同一年级的两个班级进行教学实验，第一个班级的学生在听课过程中被鼓励随时提问，而第二个班级的学生没有受到同样的鼓励，结果显示，第一个班级学生的课堂专注度明显高于第二个班级。研究者据此建议在教学过程中学生应随时提问，以提升知识掌握效果。如果以下选项为真，最能支持研究者建议的是（ ）。", "ans": "B", "opts": ["A.学生在课堂上随时主动提问能活跃课堂气氛", "B.课堂专注度是影响知识掌握效果的重要因素", "C.这两个班级的学生在实验前的学习成绩相当", "D.随时提问能帮助学生增强自我认同感和自信"], "solution": {"answer": "B", "oneLiner": "论据落「专注度」、论点落「知识掌握」，B 补上二者的桥", "steps": [{"n": 1, "action": "拆论据与论点", "why": "加强题的一切判断都要站在「论据能否撑住论点」上，先分清两者才谈得上加强", "detail": "论据：提问班课堂专注度更高；论点：随时提问能提升知识掌握效果"}, {"n": 2, "action": "找概念缺口", "why": "缺口就是加强的着力点，缺口越大，能补上的选项加强力度越强", "detail": "论据说「专注度」，论点说「知识掌握」，两者之间缺一步连接"}, {"n": 3, "action": "锁定B", "why": "B 直接建立「专注度影响知识掌握」，论据才能推出论点，是最强的加强方式", "detail": "专注度 →（B 搭桥）→ 知识掌握，缺口被直接补齐", "key": true}, {"n": 4, "action": "排除ACD", "why": "三项看似相关，但都没接上从论据到论点的那一步，属于力度不足或无关", "detail": "A 停在气氛、D 停在自信、C 只是排除干扰变量，均未连通论点"}], "errors": [{"o": "A", "type": "无关选项", "why": "气氛与掌握效果无关"}, {"o": "C", "type": "力度不足", "why": "只是控制变量，未连通论点"}, {"o": "D", "type": "无关选项", "why": "自信与知识掌握无关"}], "insight": {"position": "判断推理 → 逻辑判断 → 加强/削弱/前提 → 加强 → 搭桥", "signal": "论据与论点的主词不是同一个词（专注度 vs 知识掌握）→ 优先找把两者连起来的选项", "essence": "加强的本质是让论点更可信；最直接的办法是补上论据通往论点的那一步，即搭桥", "formula": ["加强力度：搭桥 ＞ 补充论据 ＞ 加强前提 ＞ 举例", "搭桥式 = 在 A（论据关键词）与 B（论点关键词）之间建立 A→B 或 A 影响 B"], "pitfalls": ["「加强前提」（如控制两组成绩相当）常被误当最强加强，其实只排除干扰，不如搭桥", "与论点词不同的选项（气氛、自信）看着相关，实则无关，必须先锁定论点落在哪个词"], "strategy": {"shouldDo": "必做", "bestWay": "先写下「论据关键词→论点关键词」，再看哪个选项正好连上这两词，几秒可定", "timeCost": "约50秒", "traps": "C 这类「两组条件相同」很像支持，容易误选；它只加强实验可靠性，不是加强结论"}}}}, {"key": "分析推理·假设法", "src": "2025广东省考真题 第53题", "q": "研究所计划从7名在读研究生中，推选2名男生、2名女生到企业实习。已知：（1）赵、钱、孙是男生；（2）李、刘、王、吴是女生；（3）如果推选刘、吴其中一人，那么孙也会被推选。根据上述陈述，可以得知（ ）。", "ans": "B", "opts": ["A.赵、李中至少有1人被推选", "B.孙、王中至少有1人被推选", "C.钱、王中至少有1人被推选", "D.孙、刘中至少有1人被推选"], "solution": {"answer": "B", "oneLiner": "反设孙、王都没选，则女生必含刘或吴，与(3)逆否矛盾", "steps": [{"n": 1, "action": "翻条件为逆否", "why": "条件句正面不好用，逆否才能从「没选孙」反推「刘吴都没选」，这是破题关键", "detail": "(3) 选刘或吴 ⇒ 选孙；逆否：没选孙 ⇒ 刘、吴都不能选"}, {"n": 2, "action": "反设B不成立", "why": "问「可以得知」即问必然成立，反设其否定、导出矛盾是最稳的判定方式", "detail": "假设孙、王都没被选"}, {"n": 3, "action": "推演至矛盾", "why": "矛盾出现即说明假设不成立，原命题必然为真，正是「可以得知」的含义", "detail": "男生只能选赵钱；女生需2人而王已排除，只能从李刘吴取2，必含刘或吴 ⇒ 由逆否必须选孙，与假设矛盾", "key": true}, {"n": 4, "action": "排除ACD", "why": "其余三项都能构造出反例，说明并非必然成立，不能选", "detail": "A 可举李不被选、C 可举钱王都不选、D 可举刘不被选的反例"}], "errors": [{"o": "A", "type": "绝对化", "why": "可构造反例：李可不被选"}, {"o": "C", "type": "绝对化", "why": "可构造反例：钱、王可均不被选"}, {"o": "D", "type": "绝对化", "why": "刘不被选时该项落空"}], "insight": {"position": "判断推理 → 逻辑判断 → 真假/分析推理 → 假设法", "signal": "题干给配额 + 若干「如果…那么」条件，问「可以得知/必然成立」→ 用反证假设", "essence": "「可以得知」就是必然为真；判定必然性的通用工具是反设其否定、看是否矛盾", "formula": ["要证 P 必真 ⇒ 假设 ¬P，推出矛盾 ⇒ P 成立", "条件句 A→B 的逆否 ¬B→¬A 是反向推理的唯一合法入口"], "pitfalls": ["直接把(3)正着用只能得正向结论，反推时忘了用逆否就卡住", "四选项都像「至少一个」，必须逐个构造反例，凭直觉选极易错"], "strategy": {"shouldDo": "可做", "bestWay": "挑一个包含稀缺项（孙）的选项做反证，通常一两步就出矛盾，不必四选项全推", "timeCost": "约80秒", "traps": "反证时容易漏掉「王」这类未被条件约束的人，导致推不出矛盾而误判"}}}}, {"key": "图形推理·位置类平移", "src": "2025广东省考真题 第49题", "q": "从所给的四个选项中，选择最合适的一个填在问号处，使之呈现一定的规律性（　　）。", "ans": "B", "opts": ["A.A", "B.B", "C.C", "D.D"], "img": "https://alibbxtbox.oss-cn-guangzhou.aliyuncs.com/mm5/b64/p49.png", "solution": {"answer": "B", "oneLiner": "内外两圈分开走：内圈顺时针移1格，外圈两块反向各移1格", "steps": [{"n": 1, "action": "判定题型", "why": "元素完全相同、只是位置变了，直接归平移，不要再看数量或样式", "detail": "四幅图黑块数量、形状一致，仅位置不同 → 位置类"}, {"n": 2, "action": "分层追踪", "why": "内外圈混着看会觉得规律乱，必须分层各自独立找规律再叠加", "detail": "内圈黑块顺时针移1格；外圈两块一左一右各移1格", "key": true}, {"n": 3, "action": "比对选项", "why": "两圈规律都确定后再看选项，可一次排除所有落点不符的项", "detail": "同时满足内圈顺时针1格、外圈两块各移1格的只有B"}], "errors": [{"o": "A", "type": "无关选项", "why": "内圈落点错一格"}, {"o": "C", "type": "无关选项", "why": "外圈两块相对位置被破坏"}, {"o": "D", "type": "无关选项", "why": "内圈转成了逆时针"}], "insight": {"position": "判断推理 → 图形推理 → 位置类 → 平移", "signal": "各图组成元素完全相同、只是位置变了 → 直接归平移，排除数量/样式思路", "essence": "平移题只看两件事：移动方向、移动格数；元素个数不变是它的标志", "formula": ["平移三要素 = 谁在动 + 往哪动 + 动几格", "多元素时先分层（内圈/外圈、上下/左右），各层独立找规律再叠加"], "pitfalls": ["把内外圈混在一起看，会觉得规律乱；必须先分层再看", "顺时针/逆时针看反是最高频失误，可在图上标箭头确认"], "strategy": {"shouldDo": "必做", "bestWay": "先框出内外圈，只盯一个黑块追三格，方向格数定了再看别的块验证", "timeCost": "约45秒", "traps": "图形元素多时容易漏看外圈第二块，只验一个块就选会出错"}}}}, {"key": "科学推理·力学受力分析", "src": "2026广东省考真题 第66题", "q": "如图所示，几颗棋子叠放在一起，其中一颗突然被水平方向的外力击打，飞了出去。忽略空气阻力，则以下判断正确的有（ ）项。①棋子飞出的一瞬间，上方棋子所受合外力为0；②下方棋子所受的合外力始终为0；③棋子飞出的一瞬间，上方最下面的棋子受到了向下的压力；④在落地前，飞出去的棋子在水平方向上的速度恒定。", "ans": "B", "opts": ["A.1", "B.2", "C.3", "D.4"], "img": "https://alibbxtbox.oss-cn-guangzhou.aliyuncs.com/mm5/b64/p66.png", "solution": {"answer": "B", "oneLiner": "①③错（上方瞬间失重无挤压）、②④对，共2项", "steps": [{"n": 1, "action": "锁定瞬间状态", "why": "全部争议集中在「飞出的一瞬间」，不先把时刻定死就无法判断受力变化", "detail": "中间棋子被击飞的瞬间，上方棋子失去下方支撑"}, {"n": 2, "action": "判上方失重", "why": "力来自接触，接触一消失支持力立刻为零；这是同时否掉①和③的总开关", "detail": "上方棋子瞬间只受重力、无支撑，处于完全失重：合外力=mg≠0故①错，无挤压故③错", "key": true}, {"n": 3, "action": "判②与④", "why": "②要区分「瞬间」与「始终」；④只需看水平方向是否受力", "detail": "下方棋子被击时受冲量，「始终为0」不成立；飞出后忽略阻力水平不受力，速度恒定，④对"}, {"n": 4, "action": "统计项数", "why": "题目问「正确的有几项」，必须逐项落定再计数，不能估", "detail": "仅②④正确，共2项 → 选B"}], "errors": [{"o": "A", "type": "计算错误", "why": "④明确对，至少2项"}, {"o": "C", "type": "计算错误", "why": "①或③不可能对"}, {"o": "D", "type": "计算错误", "why": "①③与失重事实冲突"}], "insight": {"position": "判断推理 → 科学推理 → 广东省考特色 → 力学 → 受力分析", "signal": "题干出现「瞬间/突然/击飞」等突变词 → 重点看接触状态是否改变、是否出现失重", "essence": "弹力（支持力、压力）依赖接触，接触消失即刻为零；合外力是否为零要看该时刻的受力，不能凭感觉", "formula": ["完全失重：只受重力 ⇒ 合外力 = mg，对下方无压力", "水平方向不受力 ⇒ 水平速度恒定（忽略空气阻力）", "弹力存在条件：接触 + 挤压，缺一即无"], "pitfalls": ["把「始终为0」和「某时刻为0」混为一谈——②就是拿「始终」设的陷阱", "误以为上方棋子还压着下方（③），忽略瞬间已被击飞、接触已断", "①与③同源，都取决于上方是否失重，判定一次即可同时解决"], "strategy": {"shouldDo": "可做", "bestWay": "先判「瞬间上方是否失重」，一步定①③；再单独看④是否受水平力，四项即全部落定", "timeCost": "约70秒", "traps": "逐项平均用力会很慢；找到①③同源后可省掉一半推理"}}}}];
+const COLORS = [
+  ['宣纸底','#F4F0E6','paper · 主背景'],
+  ['墨','#1B2430','ink · 正文'],
+  ['朱砂','#C4362A','vermilion · 强调'],
+  ['钢蓝','#45607D','steel · 序号'],
+  ['竹青','#1E7A5A','jade · 正向'],
+  ['纸纹线','#D8D0BE','rule · 分隔'],
+  ['荧光黄','#F3E3A3','mark · 划重点'],
+  ['淡朱笺','#F7EBE2','strategy · 策略底']
+];
+document.getElementById('swatches').innerHTML = COLORS.map(c=>
+  `<div class="sw"><div class="chip" style="background:${c[1]}"></div><div class="meta"><div class="nm">${c[0]}</div><div class="hx">${c[1]}</div><div class="use">${c[2]}</div></div></div>`
+).join('');
+
+let cur = 2; // 默认第53题（分析推理）
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+// 题干里把 (3)、「逆否」等关键做荧光笔标记（仅展示质感）
+function markQ(q){
+  let s=esc(q);
+  s=s.replace(/（[123]）/g,'<span class="hl">$&</span>');
+  return s;
+}
+function renderLeft(idx){
+  const s=DATA[idx], v=s.solution;
+  document.getElementById('hno').textContent=String(idx+1).padStart(2,'0');
+  document.getElementById('hpath').textContent=s.key.split('·')[0]+' › 逻辑判断 › 例题';
+  document.getElementById('qnav').innerHTML=DATA.map((x,i)=>`<div class="q ${i===idx?'on':''} ${i<idx?'done':''}" data-i="${i}">${i+1}</div>`).join('');
+  document.querySelectorAll('#qnav .q').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;renderAll()});
+  document.getElementById('qtext').innerHTML=markQ(s.q);
+  document.getElementById('opts').innerHTML=s.opts.map((o,i)=>{
+    const L=o.slice(0,1), tx=o.slice(2).trim();
+    return `<div class="opt ${L===v.answer?'sel':''}" data-l="${L}"><span class="bubble"></span><span class="lt">${esc(L)}.</span><span class="tx">${esc(tx)}</span></div>`;
+  }).join('');
+}
+function renderRight(idx){
+  const s=DATA[idx], v=s.solution, ins=v.insight||{}, stg=ins.strategy||{};
+  let h='';
+  // 答案印章条
+  h+=`<div class="ans-hero">
+    <div class="seal">${esc(v.answer)}</div>
+    <div class="hero-txt">
+      <div class="hero-top"><span class="qn">第 ${idx+1} 题</span><span class="src">${esc(s.src)}</span><span class="tag-no">✕ 做错</span></div>
+      <div class="oneline">${esc(v.oneLiner)}</div>
+    </div></div>`;
+  // 双栏
+  h+=`<div class="cols"><div>
+    <div class="col-hd"><span class="num">壹</span>解题步骤<span class="cnt">${v.steps.length} STEPS</span></div>
+    <div class="steps">`;
+  v.steps.forEach(st=>{
+    h+=`<div class="step ${st.key?'key':''}">
+      <div class="dot">${st.n}</div>
+      <div class="act">${esc(st.action)}${st.key?'<span class="keytag">关键步</span>':''}</div>
+      <div class="body"><span class="ln"><b>为什么</b>${esc(st.why)}</span><span class="ln"><b>内容</b>${esc(st.detail)}</span></div>
+    </div>`;
+  });
+  h+=`</div></div><div>
+    <div class="col-hd"><span class="num">贰</span>错因<span class="cnt">只看错项</span></div>
+    <div class="errs">`;
+  (v.errors||[]).forEach(e=>{
+    h+=`<div class="err"><div class="h"><span class="k">${esc(e.o)}</span><span class="ty">${esc(e.type)}</span></div><div class="why">${esc(e.why)}</div></div>`;
+  });
+  h+=`</div></div></div>`;
+  // 深解笺：定位已由 header 路径承载，此处聚焦信号/本质，上下排布
+  h+=`<div class="deep"><div class="section-hd">叁 · 深度解析</div><div class="facts">`;
+  [['信号',ins.signal],['本质',ins.essence]].forEach(r=>{
+    if(r[1])h+=`<div class="fact"><b>${r[0]}</b>${esc(r[1])}</div>`;
+  });
+  h+=`</div>`;
+  if(ins.formula&&ins.formula.length){h+=`<div class="chiprow"><span class="lead">通式</span>`+ins.formula.map(x=>`<span class="chip">${esc(x)}</span>`).join('')+`</div>`}
+  if(ins.pitfalls&&ins.pitfalls.length){h+=`<div class="chiprow"><span class="lead warn">易错</span>`+ins.pitfalls.map(x=>`<span class="chip warn">${esc(x)}</span>`).join('')+`</div>`}
+  h+=`</div>`;
+  // 策略：最优解为主，取舍/耗时/陷阱降为小字元信息
+  h+=`<div class="strategy">
+    <div class="bestway"><b>最优解</b>${esc(stg.bestWay||'-')}</div>
+    <div class="stg-meta">
+      <span><b>取舍</b>${esc(stg.shouldDo||'-')}</span>
+      <span><b>耗时</b>${esc(stg.timeCost||'-')}</span>
+      <span><b>陷阱</b>${esc(stg.traps||'-')}</span>
+    </div>
+  </div>`;
+  document.getElementById('right').innerHTML=h;
+}
+function renderAll(){
+  document.getElementById('qswitch').innerHTML=DATA.map((x,i)=>`<button class="${i===cur?'on':''}" data-i="${i}">${esc(x.key.split('·')[0])}</button>`).join('');
+  document.querySelectorAll('#qswitch button').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;renderAll()});
+  renderLeft(cur); renderRight(cur);
+}
+renderAll();
+</script>
+</body>
+</html>

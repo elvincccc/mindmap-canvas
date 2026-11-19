@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>画布视觉方案 · 聚焦场</title>
+<style>
+:root{
+  --void:#07090f; --card:#131a25; --card-2:#18202d; --line:#2c3748;
+  --txt:#e8edf4; --dim:#8a97a8; --focus:#7aa2f7; --gold:#d9a441;
+  --mono:ui-monospace,Consolas,monospace;
+  --sans:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#05070b;color:var(--txt);font-family:var(--sans);line-height:1.6;padding:26px 18px 60px;
+  background-image:radial-gradient(circle at 1px 1px,rgba(138,151,168,.045) 1px,transparent 0);background-size:28px 28px}
+.wrap{max-width:1280px;margin:0 auto}
+.spec{background:#0d1219;border:1px solid #1c2635;border-radius:14px;padding:26px 30px;margin-bottom:22px}
+.top{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:1px solid #1c2635;padding-bottom:18px;margin-bottom:22px}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--focus);text-transform:uppercase}
+h1{margin:4px 0 0;font-size:27px;font-weight:800;letter-spacing:.03em;color:#f2f5f9}
+h1 em{font-family:Georgia,serif;font-style:italic;font-weight:400;color:var(--gold)}
+.desc{margin-left:auto;max-width:600px;font-size:12.5px;color:var(--dim);line-height:1.8}
+.desc b{color:var(--focus);font-weight:700}
+.grid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:26px}
+h2{font-size:11px;font-weight:800;letter-spacing:.16em;color:#66748a;margin:0 0 13px;text-transform:uppercase}
+/* 色卡 */
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sw{border-radius:8px;overflow:hidden;border:1px solid #222d3e}
+.sw .chip{height:38px;position:relative}
+.sw .chip::after{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.12) 1px,transparent 0);background-size:10px 10px}
+.sw .meta{padding:6px 7px;background:#111823}
+.sw .nm{font-size:10px;font-weight:800;color:#dfe5ef}
+.sw .hx{font-family:var(--mono);font-size:9px;color:#7c8ba0;margin-top:1px}
+.sw .use{font-size:8.5px;color:#5e6b7e;margin-top:2px;line-height:1.3}
+/* 字体 */
+.tr{margin-bottom:10px}
+.tr .lb{font-size:9.5px;letter-spacing:.1em;color:#66748a;margin-bottom:3px;font-weight:700}
+.t-sans{font-size:14px;font-weight:700;color:#e8edf4}
+.t-serif{font-family:Georgia,serif;font-size:22px;color:var(--gold)}
+.t-num{font-family:var(--mono);font-size:12px;color:#8fd0b4}
+/* 原则/自检 */
+ul.pr{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+ul.pr li{font-size:11.5px;color:#aab6c8;padding-left:16px;position:relative;line-height:1.5}
+ul.pr li::before{content:"";position:absolute;left:0;top:7px;width:6px;height:6px;border:1.5px solid var(--focus);transform:rotate(45deg)}
+.chk{margin-top:12px;padding:10px 12px;background:#0d1a17;border:1px solid #1c3a30;border-radius:8px;font-size:10.5px;color:#8fd0b4;line-height:1.65}
+.chk b{color:#6ee7a8}
+/* 预览 */
+.stagehd{display:flex;align-items:center;gap:12px;margin:0 2px 10px}
+.stagehd .tag{font-size:10px;font-weight:800;letter-spacing:.16em;color:#66748a}
+.hint{margin-left:auto;font-size:11px;color:var(--focus)}
+iframe{width:100%;height:600px;border:1px solid #1c2635;border-radius:12px;background:var(--void);display:block;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.foot{margin-top:16px;text-align:center;font-size:10px;color:#5a6577;letter-spacing:.05em}
+.foot b{color:#9fb0c8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="spec">
+    <div class="top">
+      <div>
+        <div class="eyebrow">Canvas Visual Proposal</div>
+        <h1>聚焦场 · <em>Focus Field</em></h1>
+      </div>
+      <div class="desc">
+        黑底不动。把<b>装饰性的亮</b>全部拿掉，只留<b>结构性的亮</b>：一级模块从彩色大色块退成深色卡 + 细色条，连线统一低对比冷灰，层级靠明度而非色相堆叠。再叠加<b>焦点模式</b>——点一个节点，根→它的路径点亮、其余退暗，视线自然收拢。
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <h2>01 / 配色 Token（黑底保留）</h2>
+        <div class="swatches">
+          <div class="sw"><div class="chip" style="background:#07090f"></div><div class="meta"><div class="nm">虚空</div><div class="hx">#07090f</div><div class="use">画布底 · 去紫光晕</div></div></div>
+          <div class="sw"><div class="chip" style="background:#131a25"></div><div class="meta"><div class="nm">节点卡</div><div class="hx">#131a25</div><div class="use">node bg</div></div></div>
+          <div class="sw"><div class="chip" style="background:#2c3748"></div><div class="meta"><div class="nm">静息线</div><div class="hx">#2c3748</div><div class="use">连线/边框</div></div></div>
+          <div class="sw"><div class="chip" style="background:#7aa2f7"></div><div class="meta"><div class="nm">聚焦蓝</div><div class="hx">#7aa2f7</div><div class="use">唯一强调</div></div></div>
+          <div class="sw"><div class="chip" style="background:#e8edf4"></div><div class="meta"><div class="nm">主文字</div><div class="hx">#e8edf4</div><div class="use">txt</div></div></div>
+          <div class="sw"><div class="chip" style="background:#8a97a8"></div><div class="meta"><div class="nm">次文字</div><div class="hx">#8a97a8</div><div class="use">dim</div></div></div>
+          <div class="sw"><div class="chip" style="background:#d9a441"></div><div class="meta"><div class="nm">星标金</div><div class="hx">#d9a441</div><div class="use">star</div></div></div>
+          <div class="sw"><div class="chip" style="background:linear-gradient(90deg,#818cf8,#34d399,#e879f9,#eab308,#38bdf8)"></div><div class="meta"><div class="nm">模块色</div><div class="hx">仅 3-4px</div><div class="use">色条识别</div></div></div>
+        </div>
+      </div>
+      <div>
+        <h2>02 / 字体角色</h2>
+        <div class="tr"><div class="lb">节点文字 — 无衬线，层级靠明度/字重</div><div class="t-sans">判断推理 · 逻辑判断 · 逆否等价</div></div>
+        <div class="tr"><div class="lb">计数 / 题数 — 等宽对齐</div><div class="t-num">例题 54 · 节点 205 · 第 53 题</div></div>
+        <div class="tr"><div class="lb">主张标题 — 衬线（仅方案层）</div><div class="t-serif">Focus Field</div></div>
+        <div class="tr"><div class="lb">原则</div><div style="font-size:11px;color:var(--dim)">画布内不引入衬线；衬线只用于本方案标题，保持引擎中性</div></div>
+      </div>
+      <div>
+        <h2>03 / 版式 & 自检</h2>
+        <ul class="pr">
+          <li>黑底保留，去掉紫色径向光晕 + 淡化点阵</li>
+          <li>模块色从铺满收缩为 3–4px 色条，识别但不抢眼</li>
+          <li>层级靠明度递进（L0 亮 → L3 暗），不靠色相堆叠</li>
+          <li>连线统一冷灰、去虚线；焦点路径单独点亮为蓝</li>
+          <li>焦点模式：点节点高亮根→路径，点空白退出</li>
+        </ul>
+        <div class="chk"><b>自检通过</b> · 引擎/数据/交互零改动，纯视觉层改造；焦点为增量能力，不破坏原"点节点展开/收起"；切科/展开全部自动清焦点；实测零 JS 错误。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stagehd">
+    <span class="tag">LIVE · 可交互真画布</span>
+    <span class="hint">试试：点任一节点看路径高亮 → 点空白退出 → 切科目 / 展开全部</span>
+  </div>
+  <iframe src="https://elvincccc.github.io/mindmap-canvas/" title="画布方案预览"></iframe>
+  <div class="foot">方案 <b>聚焦场 · Focus Field</b> · 已合入线上主文件 · 真实题库数据 · <a href="https://elvincccc.github.io/mindmap-canvas/" style="color:#5eb0ef;text-decoration:none">elvincccc.github.io/mindmap-canvas</a></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>最小思维导图画布 · 可行性实验</title>
+<style>
+  /* ============ 样式：仅画布所需，零外部依赖（不依赖 Tailwind / CDN） ============ */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    background: #0b1020; color: #e2e8f0;
+  }
+  /* 顶部工具栏 */
+  #toolbar {
+    position: fixed; top: 12px; left: 12px; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    max-width: calc(100vw - 24px);
+  }
+  .btn {
+    height: 34px; padding: 0 12px; border-radius: 9px; cursor: pointer;
+    background: rgba(30,41,59,.92); color: #e2e8f0; font-size: 13px; font-weight: 600;
+    border: 1px solid #334155; transition: .15s; user-select: none;
+  }
+  .btn:hover { background: #334155; border-color: #6366f1; }
+  .btn:active { transform: scale(.96); }
+  .btn.primary { background: #6366f1; border-color: #818cf8; color: #fff; }
+  .btn.primary:hover { background: #4f46e5; }
+  #info {
+    font-size: 12px; color: #94a3b8; background: rgba(15,23,42,.75);
+    border: 1px solid #334155; border-radius: 9px; padding: 7px 12px; line-height: 1.5;
+  }
+  #info b { color: #a5b4fc; }
+  /* 画布视口 */
+  #viewport {
+    position: absolute; inset: 0; overflow: hidden; cursor: grab;
+    background-image:
+      radial-gradient(120% 80% at 50% 30%, rgba(99,102,241,.13), transparent 62%),
+      radial-gradient(circle at 1px 1px, rgba(148,163,184,.13) 1px, transparent 0);
+    background-size: 100% 100%, 24px 24px;
+  }
+  #viewport.grabbing { cursor: grabbing; }
+  #stage { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  #edges { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+  #nodes { position: absolute; top: 0; left: 0; }
+  /* 节点：层级靠底色/边框区分，左侧色条标识所属分支 */
+  .node {
+    position: absolute; display: flex; align-items: center; gap: 7px;
+    padding: 0 12px; border-radius: 10px; cursor: pointer; user-select: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35); overflow: hidden;
+    transition: box-shadow .15s, filter .15s;
+  }
+  .node:hover { filter: brightness(1.12); }
+  .node .bar { position: absolute; left: 0; top: 0; height: 100%; width: 5px; }
+  .node .txt { line-height: 1.25; overflow: hidden; }
+  .node .ico { opacity: .8; flex-shrink: 0; }
+  .node .exp { margin-left: auto; flex-shrink: 0; font-size: 12px; opacity: .75; }
+  .node.focus { outline: 2px solid #818cf8; outline-offset: 1px; }
+  .hint { position: fixed; bottom: 12px; left: 12px; z-index: 20; font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button class="btn primary" id="btnData">数据集：AI 学习地图 ⇄</button>
+  <button class="btn" id="btnFit">适应视图</button>
+  <button class="btn" id="btnExpand">全部展开</button>
+  <button class="btn" id="btnCollapse">全部收起</button>
+  <button class="btn" id="btnCenter">回到根</button>
+  <button class="btn" id="btnZoomIn">＋</button>
+  <button class="btn" id="btnZoomOut">－</button>
+  <div id="info"></div>
+</div>
+
+<div id="viewport">
+  <div id="stage">
+    <svg id="edges"></svg>
+    <div id="nodes"></div>
+  </div>
+</div>
+<div class="hint">点击节点展开/收起 · 拖拽平移 · Ctrl+滚轮缩放 · 双指缩放</div>
+
+<script>
+/* ============================================================================
+ *  第一部分：DATA —— 唯一内容源（数据可替换的实验对象）
+ *  ----------------------------------------------------------------------------
+ *  渲染引擎完全不认识"AI/项目/读书"这些具体主题，它只读下面这个结构：
+ *    root.name              根节点标题
+ *    branches[]             一级分支（每个就是一个模块）
+ *      .name / .color       分支名 / 配色键
+ *      .children[]          二级节点（可以是字符串，也可以是 {name, children}）
+ *        .children[]        三级、四级……（层级任意，引擎递归处理）
+ *  想换一张导图：只替换 MINDMAP_DATA，下面第二部分一个字都不用改。
+ * ============================================================================ */
+const PALETTE = {
+  indigo:'#6366f1', emerald:'#10b981', fuchsia:'#d946ef',
+  amber:'#f59e0b', sky:'#0ea5e9', rose:'#f43f5e'
+};
+
+/* ---------- 数据集 A：AI 工程师学习地图 ---------- */
+const DATASET_A = {
+  root: { name: 'AI 工程师学习地图' },
+  branches: [
+    { name:'数学基础', color:'indigo', children:[
+      { name:'线性代数', children:['向量/矩阵','特征值','奇异值分解 SVD'] },
+      { name:'概率统计', children:['分布与期望','贝叶斯','最大似然 MLE'] },
+      { name:'微积分与优化', children:['梯度/偏导','凸优化','拉格朗日'] }
+    ]},
+    { name:'编程与工具', color:'emerald', children:[
+      { name:'Python', children:['NumPy/Pandas','PyTorch'] },
+      { name:'工程能力', children:['Git','Docker','Linux'] },
+      { name:'数据管道', children:['ETL','特征存储'] }
+    ]},
+    { name:'机器学习', color:'fuchsia', children:[
+      { name:'监督学习', children:['回归','分类','集成学习'] },
+      { name:'无监督学习', children:['聚类','降维'] },
+      { name:'评估与调参', children:['交叉验证','过拟合','指标'] }
+    ]},
+    { name:'深度学习', color:'amber', children:[
+      { name:'CNN', children:['卷积','池化','经典网络'] },
+      { name:'Transformer', children:['注意力机制','位置编码','预训练'] },
+      { name:'训练技巧', children:['归一化','正则化','学习率'] }
+    ]},
+    { name:'工程落地', color:'sky', children:[
+      { name:'模型部署', children:['推理优化','服务化'] },
+      { name:'LLM 应用', children:['RAG','Agent','Prompt'] }
+    ]}
+  ]
+};
+
+/* ---------- 数据集 B：项目管理知识体系（主题完全不同） ---------- */
+const DATASET_B = {
+  root: { name: '项目管理知识体系' },
+  branches: [
+    { name:'十大知识领域', color:'rose', children:[
+      { name:'范围管理', children:['需求收集','WBS 分解','范围确认'] },
+      { name:'进度管理', children:['活动排序','估算工期','关键路径'] },
+      { name:'成本管理', children:['成本估算','预算','挣值管理 EVM'] },
+      { name:'质量管理', children:['质量规划','质量保证','质量控制'] }
+    ]},
+    { name:'五大过程组', color:'sky', children:[
+      { name:'启动', children:['项目章程','干系人登记'] },
+      { name:'规划', children:['管理计划','风险登记册'] },
+      { name:'执行', children:['团队建设','沟通分发'] },
+      { name:'监控', children:['绩效测量','变更控制'] },
+      { name:'收尾', children:['验收','经验教训'] }
+    ]},
+    { name:'核心工具', color:'amber', children:[
+      { name:'甘特图', children:['里程碑','依赖'] },
+      { name:'风险矩阵', children:['概率','影响'] },
+      { name:'RACI 矩阵', children:['负责','批准','知会'] }
+    ]},
+    { name:'敏捷实践', color:'emerald', children:[
+      { name:'Scrum', children:['Sprint','三个角色','五个仪式'] },
+      { name:'看板', children:['工作流','WIP 限制'] }
+    ]}
+  ]
+};
+
+/* 当前生效的数据集（切换按钮只改这一行） */
+let MINDMAP_DATA = DATASET_A;
+
+/* ============================================================================
+ *  第二部分：渲染引擎 —— 只读 MINDMAP_DATA，与具体主题完全无关
+ *  从原 v5.5 页面剥离出的核心算法：建树 → 布局 → 渲染 → 连线 → 平移缩放
+ * ============================================================================ */
+const COLW = [220, 240, 230, 230, 250, 250];   // 各层节点宽度
+const COLH = [56, 48, 42, 40, 38, 38];         // 各层节点高度
+const GAPX = 56, GAPY = 12, PAD = 26;
+const xOf = [];
+(function(){ let acc = PAD; for (let i=0;i<COLW.length;i++){ xOf.push(acc); acc += COLW[i]+GAPX; } })();
+
+const viewport = document.getElementById('viewport');
+const stage    = document.getElementById('stage');
+const nodesBox = document.getElementById('nodes');
+const edgesSvg = document.getElementById('edges');
+
+let rootNode = null;
+let focusNode = null;
+let scale = 1, tx = 26, ty = 26;
+let dragging = false, lastX = 0, lastY = 0, moved = false, pinchDist = 0;
+let lastEdges = [];
+
+/* ---------- 建树：把嵌套 DATA 转成带坐标/状态的节点树 ---------- */
+function makeNode(name, level, color, parent){
+  return { name:String(name), level, color, children:[], _parent:parent, _open:false };
+}
+function buildTree(D){
+  const root = makeNode(D.root.name, 0, 'slate', null);
+  (D.branches||[]).forEach(b=>{
+    const bn = makeNode(b.name, 1, b.color||'indigo', root);
+    (b.children||[]).forEach(t=>{
+      const tn = makeNode(typeof t==='string' ? t : t.name, 2, bn.color, bn);
+      const tObj = (typeof t==='string') ? {} : t;
+      (tObj.children||[]).forEach(s=>{
+        const sn = makeNode(typeof s==='string' ? s : s.name, 3, bn.color, tn);
+        const sObj = (typeof s==='string') ? {} : s;
+        (sObj.children||[]).forEach(l=>{
+          sn.children.push(makeNode(typeof l==='string' ? l : l.name, 4, bn.color, sn));
+        });
+        tn.children.push(sn);
+      });
+      bn.children.push(tn);
+    });
+    root.children.push(bn);
+  });
+  // 默认只展开根 + 一级分支
+  root._open = true;
+  root.children.forEach(c=>{ c._open=false; c.children.forEach(k=>k._open=false); });
+  return root;
+}
+
+/* ---------- 布局：后序遍历，叶子纵向排列、父节点居中，再平移到非负坐标 ---------- */
+function layout(){
+  let cursor = 0;
+  function estH(name, level){
+    const w = COLW[level]-40;
+    const perLine = Math.max(8, Math.floor(w/13));
+    const lines = Math.max(1, Math.ceil(String(name).length/perLine));
+    return Math.max(COLH[level], lines*19+14);
+  }
+  function place(node, level){
+    node._w = COLW[level];
+    node._h = estH(node.name, level);
+    node._x = xOf[level];
+    const open = node.children.length>0 && node._open;
+    if(!open){ node._y = cursor + node._h/2; cursor += node._h + GAPY; }
+    else {
+      node.children.forEach(c=>place(c, level+1));
+      node._y = (node.children[0]._y + node.children[node.children.length-1]._y)/2;
+    }
+  }
+  place(rootNode, 0);
+  let minTop=Infinity, maxBottom=-Infinity, maxRight=0;
+  (function scan(n){
+    const top=n._y-n._h/2, bottom=n._y+n._h/2;
+    if(top<minTop)minTop=top; if(bottom>maxBottom)maxBottom=bottom;
+    if(n._x+n._w>maxRight)maxRight=n._x+n._w;
+    if(n.children.length&&n._open)n.children.forEach(scan);
+  })(rootNode);
+  const dy = PAD-minTop;
+  (function shift(n){ n._y+=dy; if(n.children.length&&n._open)n.children.forEach(shift); })(rootNode);
+  return { w:Math.max(maxRight+PAD,240), h:Math.max(maxBottom+dy+PAD,240) };
+}
+
+/* ---------- 连线：父右缘中点 → 子左缘中点的水平 S 形贝塞尔 ---------- */
+function pathForRect(pr, cr, sRect, sc, color, level){
+  const ns='http://www.w3.org/2000/svg';
+  const x1=(pr.right-sRect.left)/sc, y1=(pr.top+pr.height/2-sRect.top)/sc;
+  const x2=(cr.left-sRect.left)/sc,  y2=(cr.top+cr.height/2-sRect.top)/sc;
+  const dx=Math.max(24,(x2-x1)*0.5);
+  const p=document.createElementNS(ns,'path');
+  p.setAttribute('d', `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`);
+  p.setAttribute('fill','none');
+  p.setAttribute('stroke', PALETTE[color]||'#475569');
+  p.setAttribute('stroke-width', level<=1 ? 3 : (level>=3 ? 1.6 : 2));
+  p.setAttribute('stroke-linecap','round');
+  p.setAttribute('opacity', level<=1 ? .85 : .6);
+  if(level>=3) p.setAttribute('stroke-dasharray','5 4');
+  return p;
+}
+function drawEdges(edgeList){
+  edgesSvg.innerHTML='';
+  const sRect=stage.getBoundingClientRect(), sc=scale||1;
+  edgeList.forEach(([p,c])=>{
+    if(!p._el||!c._el)return;
+    edgesSvg.appendChild(pathForRect(p._el.getBoundingClientRect(), c._el.getBoundingClientRect(), sRect, sc, c.color, c.level));
+  });
+}
+
+/* ---------- 节点外观：按层级生成内联样式（不依赖 Tailwind） ---------- */
+function nodeStyle(node){
+  const c = PALETTE[node.color]||'#64748b';
+  if(node.level===0) return `background:#1e293b;color:#fff;border:2px solid #475569;`;
+  if(node.level===1) return `background:${c};color:#fff;border:2px solid ${c};`;
+  if(node.level===2) return `background:${c}22;color:#e2e8f0;border:1.5px solid ${c};`;
+  return `background:rgba(15,23,42,.75);color:#cbd5e1;border:1px dashed ${c};`;
+}
+function escHtml(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+/* ---------- 渲染：生成可见节点 + 收集连线 ---------- */
+function render(){
+  const dim=layout();
+  stage.style.width=dim.w+'px'; stage.style.height=dim.h+'px';
+  edgesSvg.setAttribute('width',dim.w); edgesSvg.setAttribute('height',dim.h);
+  nodesBox.innerHTML=''; edgesSvg.innerHTML='';
+  const edgeList=[];
+
+  function walk(node){
+    const el=document.createElement('div');
+    el.className='node'+(focusNode===node?' focus':'');
+    el.style.cssText = nodeStyle(node)
+      + `left:${node._x}px;top:${node._y-node._h/2}px;width:${node._w}px;height:${node._h}px;`;
+    el.title=node.name;
+    const c=PALETTE[node.color]||'#64748b';
+    const bar=document.createElement('span');
+    bar.className='bar'; bar.style.background=c; el.appendChild(bar);
+    const ico=document.createElement('span');
+    ico.className='ico';
+    ico.textContent = node.level===0?'◆':node.level===1?'▣':node.level===2?'●':'·';
+    el.appendChild(ico);
+    const txt=document.createElement('span');
+    txt.className='txt';
+    txt.style.cssText = `font-size:${node.level<=1?14:12.5}px;font-weight:${node.level<=2?600:400};`
+      + (node.level<=1?'white-space:nowrap;':'');
+    txt.textContent=node.name;
+    el.appendChild(txt);
+    if(node.children.length){
+      const exp=document.createElement('span');
+      exp.className='exp'; exp.textContent=node._open?'－':'＋';
+      el.appendChild(exp);
+    }
+    el.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      if(moved){ moved=false; return; }
+      if(node.children.length){
+        focusNode=node;
+        const before=nodeScreenPos(node);
+        node._open=!node._open;
+        render();
+        const after=nodeScreenPos(node);
+        tx+=before.x-after.x; ty+=before.y-after.y;   // 点击节点视觉位置保持不动
+        applyTransform();
+        updateInfo();
+      }
+    });
+    node._el=el;
+    nodesBox.appendChild(el);
+    if(node.children.length&&node._open) node.children.forEach(ch=>{ edgeList.push([node,ch]); walk(ch); });
+  }
+  walk(rootNode);
+  lastEdges=edgeList;
+  drawEdges(edgeList);
+}
+
+/* ---------- 视图控制 ---------- */
+function applyTransform(){ stage.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`; }
+function nodeScreenPos(node){ return { x:tx+(node._x+node._w/2)*scale, y:ty+node._y*scale }; }
+function fitView(){
+  const dim=layout(), vw=viewport.clientWidth, vh=viewport.clientHeight;
+  scale=Math.min(vw/(dim.w+40), vh/(dim.h+40), 1);
+  tx=(vw-dim.w*scale)/2; ty=(vh-dim.h*scale)/2;
+  applyTransform(); drawEdges(lastEdges);
+}
+function defaultView(){
+  const dim=layout(), vw=viewport.clientWidth, vh=viewport.clientHeight;
+  scale=Math.min(Math.max((vw-40)/(dim.w+60),0.5),1);
+  tx=26; ty=vh/2-(rootNode._y||0)*scale;
+  applyTransform(); drawEdges(lastEdges);
+}
+function centerOn(node){
+  const vw=viewport.clientWidth, vh=viewport.clientHeight;
+  tx=vw/2-(node._x+node._w/2)*scale; ty=vh/2-node._y*scale;
+  applyTransform();
+}
+function zoom(factor,px,py){
+  const nw=Math.min(Math.max(scale*factor,0.15),2.5);
+  if(px!==undefined){ tx=px-((px-tx)/scale)*nw; ty=py-((py-ty)/scale)*nw; }
+  scale=nw; applyTransform(); updateInfo();
+}
+function setAll(open){
+  (function rec(n){ n.children.forEach(c=>{ c._open=open; rec(c); }); })(rootNode);
+  render(); updateInfo();
+}
+function countNodes(){ let n=0; (function rec(x){n++;x.children.forEach(rec);})(rootNode); return n; }
+function updateInfo(){
+  const doc=document.getElementById('info');
+  doc.innerHTML=`数据集 <b>${MINDMAP_DATA===DATASET_A?'AI 学习地图':'项目管理知识体系'}</b> ｜ `
+    +`一级分支 <b>${MINDMAP_DATA.branches.length}</b> ｜ 节点 <b>${countNodes()}</b> ｜ 缩放 <b>${Math.round(scale*100)}%</b>`;
+}
+
+/* ---------- 交互事件：拖拽平移 / Ctrl+滚轮缩放 / 触屏 ---------- */
+viewport.addEventListener('mousedown',(e)=>{ dragging=true; moved=false; lastX=e.clientX; lastY=e.clientY; viewport.classList.add('grabbing'); });
+window.addEventListener('mousemove',(e)=>{
+  if(!dragging)return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  if(Math.abs(dx)+Math.abs(dy)>3)moved=true;
+  tx+=dx; ty+=dy; lastX=e.clientX; lastY=e.clientY; applyTransform();
+});
+window.addEventListener('mouseup',()=>{ dragging=false; viewport.classList.remove('grabbing'); });
+viewport.addEventListener('wheel',(e)=>{
+  if(!e.ctrlKey)return;
+  e.preventDefault();
+  const r=viewport.getBoundingClientRect();
+  zoom(e.deltaY<0?1.12:0.89, e.clientX-r.left, e.clientY-r.top);
+},{passive:false});
+viewport.addEventListener('touchstart',(e)=>{
+  if(e.touches.length===1){ dragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+  else if(e.touches.length===2){ dragging=false; pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
+},{passive:true});
+viewport.addEventListener('touchmove',(e)=>{
+  if(e.touches.length===1&&dragging){
+    const dx=e.touches[0].clientX-lastX, dy=e.touches[0].clientY-lastY;
+    tx+=dx; ty+=dy; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; applyTransform();
+  } else if(e.touches.length===2&&pinchDist){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    const r=viewport.getBoundingClientRect();
+    zoom(d/pinchDist,(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,(e.touches[0].clientY+e.touches[1].clientY)/2-r.top);
+    pinchDist=d;
+  }
+},{passive:true});
+viewport.addEventListener('touchend',()=>{ dragging=false; pinchDist=0; });
+window.addEventListener('resize',()=>{ applyTransform(); drawEdges(lastEdges); });
+
+/* ---------- 工具栏按钮 ---------- */
+document.getElementById('btnData').addEventListener('click',()=>{
+  MINDMAP_DATA = (MINDMAP_DATA===DATASET_A) ? DATASET_B : DATASET_A;
+  document.getElementById('btnData').textContent =
+    '数据集：' + (MINDMAP_DATA===DATASET_A ? 'AI 学习地图' : '项目管理知识体系') + ' ⇄';
+  focusNode=null; rootNode=buildTree(MINDMAP_DATA);
+  render(); defaultView(); updateInfo();
+});
+document.getElementById('btnFit').addEventListener('click',fitView);
+document.getElementById('btnExpand').addEventListener('click',()=>setAll(true));
+document.getElementById('btnCollapse').addEventListener('click',()=>{ setAll(false); rootNode._open=true; render(); updateInfo(); });
+document.getElementById('btnCenter').addEventListener('click',()=>{ centerOn(rootNode); });
+document.getElementById('btnZoomIn').addEventListener('click',()=>zoom(1.15));
+document.getElementById('btnZoomOut').addEventListener('click',()=>zoom(0.87));
+
+/* ---------- 启动 ---------- */
+rootNode=buildTree(MINDMAP_DATA);
+render();
+defaultView();
+updateInfo();
+</script>
+</body>
+</html>

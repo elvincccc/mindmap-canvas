@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>解析结构 UI 原型 · 26年省考35季 第53题</title>
+<style>
+  :root{
+    --bg:#0b1120;--panel:#111a2e;--card:#16203a;--border:#253352;
+    --text:#e2e8f0;--muted:#94a3b8;--indigo:#6366f1;--indigo2:#818cf8;
+    --green:#10b981;--red:#f43f5e;--amber:#f59e0b;--sky:#0ea5e9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b2747 0%,var(--bg) 55%);
+    color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.7;padding:28px 16px 60px}
+  .wrap{max-width:660px;margin:0 auto}
+
+  /* 设计说明 */
+  .note{background:#12203f;border:1px solid #2a3c6b;border-radius:14px;padding:16px 20px;margin-bottom:22px}
+  .note h1{margin:0 0 6px;font-size:16px;color:#c7d2fe}
+  .note p{margin:4px 0;font-size:13px;color:#a5b4d4}
+  .note .old{color:#fca5a5}.note .new{color:#86efac}
+
+  /* 面板（模拟弹窗右栏） */
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.5)}
+
+  /* 头部 */
+  .hd{padding:18px 22px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#15203a,#111a2e)}
+  .hd .src{font-size:11.5px;color:#818cf8;font-weight:600;letter-spacing:.3px}
+  .hd .title{font-size:15px;font-weight:800;margin:6px 0 10px;color:#fff}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .badge{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid}
+  .badge.ans{color:#86efac;border-color:#166534;background:#052e1b}
+  .badge.wrong{color:#fda4af;border-color:#7f1d2e;background:#2a0d16}
+  .badge.src{color:#a5b4fc;border-color:#3730a3;background:#1e1b4b}
+
+  /* 锚点导航 */
+  .nav{position:sticky;top:0;z-index:5;display:flex;gap:6px;padding:10px 18px;
+    background:rgba(17,26,46,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);overflow-x:auto}
+  .nav a{flex:0 0 auto;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;
+    padding:6px 12px;border-radius:9px;border:1px solid var(--border);background:#16203a;transition:.15s;white-space:nowrap}
+  .nav a:hover{color:#c7d2fe;border-color:var(--indigo)}
+  .nav a .n{opacity:.6;margin-right:3px}
+  .nav .stat{margin-left:auto;align-self:center;font-size:11px;color:#64748b;white-space:nowrap}
+
+  .body{padding:20px 22px 26px}
+
+  /* 通用小标题 */
+  .sec-h{display:flex;align-items:center;gap:9px;margin:26px 0 14px}
+  .sec-h:first-child{margin-top:4px}
+  .sec-h .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:15px;
+    background:#1e293b;border:1px solid var(--border)}
+  .sec-h .t{font-size:14px;font-weight:800;color:#e2e8f0}
+  .sec-h .sub{font-size:11px;color:#64748b;margin-left:2px}
+  .sec-h .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+
+  /* 层1：核心解法 */
+  .solve{position:relative;background:linear-gradient(135deg,#1e1b4b,#312e81 60%,#3730a3);
+    border:1px solid #4f46e5;border-radius:14px;padding:18px 20px;font-size:14px;color:#e0e7ff}
+  .solve::before{content:"🎯 一句话解法";display:block;font-size:12px;font-weight:800;color:#a5b4fc;margin-bottom:8px;letter-spacing:.5px}
+  .solve mark{background:#fde047;color:#422006;padding:1px 5px;border-radius:5px;font-weight:800}
+  .solve strong{color:#fff}
+
+  /* 层2：解题路径 时间线 */
+  .steps{position:relative;margin-left:6px}
+  .steps::before{content:"";position:absolute;left:15px;top:14px;bottom:14px;width:2px;
+    background:linear-gradient(180deg,var(--indigo),#3730a3,transparent)}
+  .step{position:relative;padding:0 0 16px 44px}
+  .step .dot{position:absolute;left:0;top:1px;width:32px;height:32px;border-radius:50%;
+    display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;
+    background:#27324f;border:2px solid #475569;z-index:1;transition:.2s}
+  .step .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:13px;color:#cbd5e1}
+  .step .lead{font-weight:800;color:#a5b4fc}
+  .step.key .dot{background:var(--green);border-color:#34d399;box-shadow:0 0 0 4px rgba(16,185,129,.15)}
+  .step.key .card{border-color:#065f46;background:#0c2b25}
+  .step.key .lead{color:#6ee7b7}
+  .steps strong{color:#fff}
+  code{font-family:"SF Mono",Consolas,monospace;background:#0b1220;border:1px solid var(--border);
+    color:#93c5fd;padding:1px 5px;border-radius:5px;font-size:12px}
+
+  /* 层3：选项判定 网格 */
+  .exgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .ex{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 13px}
+  .ex .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .ex .k{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-weight:800;font-size:13px}
+  .ex .tag{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px}
+  .ex.no .k{background:#3f1d2b;color:#fda4af}.ex.no .tag{background:#3f1d2b;color:#fda4af}
+  .ex.ok .k{background:#053e2c;color:#6ee7b7}.ex.ok .tag{background:#053e2c;color:#6ee7b7}
+  .ex .r{font-size:12px;color:#a9b6cf;line-height:1.6}
+
+  /* 层4：深度解析 结构化 */
+  .ana{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .ana .row{display:flex;gap:11px;padding:13px 15px;border-bottom:1px solid var(--border)}
+  .ana .row:last-child{border-bottom:none}
+  .ana .ic{flex:0 0 26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:14px;background:#1e293b}
+  .ana .k{flex:0 0 78px;font-size:12px;font-weight:800;color:#c7d2fe;padding-top:2px}
+  .ana .v{flex:1;font-size:12.5px;color:#a9b6cf}
+  .ana .v strong{color:#e2e8f0}
+  .ana .formula{font-family:"SF Mono",Consolas,monospace;background:#0b1220;border:1px solid #334155;
+    color:#93c5fd;padding:2px 6px;border-radius:5px;font-size:11.5px;display:inline-block;margin:2px 0}
+  .ana .warn{background:#2a1a0a;border:1px solid #78350f;border-radius:8px;padding:8px 10px;color:#fcd34d}
+
+  /* 底部说明 */
+  .foot{margin-top:22px;background:#0f1a30;border:1px dashed #334155;border-radius:14px;padding:16px 20px}
+  .foot h3{margin:0 0 8px;font-size:13px;color:#a5b4fc}
+  .foot ul{margin:0;padding-left:18px;font-size:12.5px;color:#94a3b8}
+  .foot li{margin:4px 0}
+
+  .reveal-btn{display:inline-block;margin-top:10px;font-size:12px;font-weight:700;color:#c7d2fe;
+    background:#1e1b4b;border:1px solid #4338ca;border-radius:9px;padding:6px 14px;cursor:pointer}
+  .reveal-btn:hover{background:#312e81}
+  .step.hidden .card{opacity:.12;filter:blur(1px)}
+  .step.hidden .dot{opacity:.35}
+
+  @media(max-width:520px){.exgrid{grid-template-columns:1fr}.ana .k{flex-basis:62px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note">
+    <h1>解析结构 UI 原型 · 以「26年省考35季 第53题」为例</h1>
+    <p><span class="old">旧结构：</span>解法 / 步骤 / 深度解析 / 选项排除 → 4 个平铺 Tab，一次只能看一个，来回切换。</p>
+    <p><span class="new">新结构：</span>改为「分层解析流」——一句话解法 → 解题路径 → 选项判定 → 深度解析，一屏纵向读完，顶部锚点跳转。</p>
+  </div>
+
+  <div class="panel">
+    <div class="hd">
+      <div class="src">判断推理 · 逻辑判断 · 翻译推理 · 逆否等价</div>
+      <div class="title">第53题　建设社会主义现代化强国，关键在于科技自立自强……由此可以推出：</div>
+      <div class="badges">
+        <span class="badge ans">正确答案 A</span>
+        <span class="badge wrong">你做错了</span>
+        <span class="badge src">模考 · 26年省考35季</span>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a href="#s1"><span class="n">01</span>解法</a>
+      <a href="#s2"><span class="n">02</span>步骤</a>
+      <a href="#s3"><span class="n">03</span>选项</a>
+      <a href="#s4"><span class="n">04</span>深解</a>
+      <span class="stat">5 步 · 4 选项 · 约 2 分钟</span>
+    </div>
+
+    <div class="body">
+
+      <!-- 层1 一句话解法 -->
+      <div id="s1"></div>
+      <div class="sec-h"><span class="ic">🎯</span><span class="t">核心解法</span><span class="sub">先看结论</span><span class="line"></span></div>
+      <div class="solve" id="solveBox"></div>
+
+      <!-- 层2 解题路径 -->
+      <div id="s2"></div>
+      <div class="sec-h"><span class="ic">🪜</span><span class="t">解题路径</span><span class="sub">5 步推理链</span><span class="line"></span></div>
+      <button class="reveal-btn" id="revealBtn">▶ 逐步讲解</button>
+      <div class="steps" id="stepsBox" style="margin-top:14px"></div>
+
+      <!-- 层3 选项判定 -->
+      <div id="s3"></div>
+      <div class="sec-h"><span class="ic">🔍</span><span class="t">选项判定</span><span class="sub">为什么选 / 为什么不选</span><span class="line"></span></div>
+      <div class="exgrid" id="exBox"></div>
+
+      <!-- 层4 深度解析 -->
+      <div id="s4"></div>
+      <div class="sec-h"><span class="ic">📚</span><span class="t">深度解析</span><span class="sub">体系 · 信号 · 通式 · 易错</span><span class="line"></span></div>
+      <div class="ana" id="anaBox"></div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <h3>新结构相比旧 Tab 的改进点</h3>
+    <ul>
+      <li><b>不用切换</b>：四类解析纵向连成一条"解题流"，滚动即读，降低来回点 Tab 的认知负担。</li>
+      <li><b>结论前置</b>：一句话解法置顶高亮，先给答案与方法，再看推导，符合"先结论后论证"的阅读习惯。</li>
+      <li><b>步骤可视化</b>：时间线 + 序号 + 连接线，关键步骤（锁定答案）用绿色高亮；"逐步讲解"可一步步揭示，适合教学。</li>
+      <li><b>判定修正</b>：选项按"是否答案"区分保留/排除两色（修正了旧渲染里 A 也被标成红色排除的问题）。</li>
+      <li><b>解析结构化</b>：深度解析按体系定位/识别信号/本质/通式/易错链拆成标签行，通式用代码块、易错用警示块。</li>
+      <li><b>锚点导航</b>：顶部 sticky 导航，长解析可一键跳到目标层次。</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+/* ---------- 真实题目数据 ---------- */
+const EX = {
+  ans:"A",
+  solve:"三句先翻成箭头链 **M→S→P**（M＝把握主动行稳致远，S＝科技自立自强，P＝抓住先机占领制高点），再整体**逆否**得 ==¬P→¬M==，A「只有未把握主动，才会错失先机」正是此式。",
+  analysis:"- 体系定位：判断推理 → 逻辑判断 → 翻译推理 → 逆否等价（上位：假言命题翻译 → 本题：多句串链后整体逆否 → 下级变式：加入「且/或」的德摩根逆否）\n- 识别信号：题干出现「只有…才…」「只要…就…」「必须/要想…就…」→ 先全翻成箭头，串成链再逆否\n- 本质：考**条件句只能「肯前推肯后、否后推否前」**；答案必与箭头链同向或整体逆否\n- 通式：`只有A才B ⇒ B→A`；`只要A就B ⇒ A→B`；多条时串链 `X→…→Y`，逆否 `¬Y→¬X`；同类判别条件：看到「只有/除非/只要」就翻箭头再谈逆否\n- 易混·易错链：与「充分/必要」区分——必要（只有…才）是**后推前**、充分（只要/如果）是**前推后**；常见撞坑：把「肯后」当「肯前」（B）、把箭头写反（D）",
+  steps:[
+    "**逐句翻译成箭头** → ①「只有 S 才 M」⇒ **M→S**；②「只要 S 就 P」⇒ **S→P**；③「想 S 就必须 Q」⇒ **S→Q**。必须先翻译，否则无从推理。",
+    "**串成链条** → ①②合起来 **M→S→P**，③另作 **S→Q** 支链；这一步给出所有可用箭头。",
+    "**对每个选项做「同向/逆否」比对** → 只有与链条同向或整体逆否的才可推出。",
+    "**锁定 A** → A＝「¬P→¬M」，正是 **M→S→P 的整体逆否**，等价成立。",
+    "**排除 B/C/D** → B＝S→M（**肯后推肯前**）、D＝Q→S（**方向反**）、C 含「强国→…」**无中生有**。"
+  ],
+  exclude:[
+    {o:"A",ok:false,r:"—：M→S→P 整体逆否即 ¬P→¬M，唯一可由题干推出"},
+    {o:"B",ok:false,r:"方向反：「除非¬S否则M」=S→M，属肯后推肯前，题干只有 M→S"},
+    {o:"C",ok:false,r:"无中生有：「强国→…」题干仅说「关键在于」非严格条件，推不出「且占领制高点」"},
+    {o:"D",ok:false,r:"方向反：题干是 S→Q，D 反成 Q→S，箭头方向颠倒"}
+  ]
+};
+
+/* 富文本：**加粗** / ==高亮== / `代码` */
+function rich(s){
+  return String(s)
+    .replace(/==(.+?)==/g,'<mark>$1</mark>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+
+/* 层1 */
+document.getElementById('solveBox').innerHTML=rich(EX.solve);
+
+/* 层2 */
+const stepsHTML=EX.steps.map((t,i)=>{
+  const key=/锁定|答案|正确|=/.test(t.split('→')[0]);
+  const m=t.match(/^\*\*(.+?)\*\*\s*→\s*(.*)$/);
+  const lead=m?m[1]:'', rest=m?m[2]:t;
+  return `<div class="step ${key?'key':''}" data-i="${i}">
+    <div class="dot">${i+1}</div>
+    <div class="card"><span class="lead">${esc(lead)}</span>${lead?' → ':''}${rich(rest)}</div>
+  </div>`;
+}).join('');
+document.getElementById('stepsBox').innerHTML=stepsHTML;
+
+/* 逐步讲解 */
+let revealed=false;
+document.getElementById('revealBtn').onclick=function(){
+  const boxes=[...document.querySelectorAll('#stepsBox .step')];
+  if(!revealed){
+    boxes.forEach((b,i)=>b.classList.toggle('hidden',i>0));
+    this.textContent='⏭ 下一步';revealed=true;this.dataset.idx='1';
+  }else{
+    const i=+this.dataset.idx;
+    if(i<boxes.length){boxes[i-1].classList.remove('hidden');boxes[i].classList.remove('hidden');this.dataset.idx=String(i+1);}
+    if(i>=boxes.length){boxes.forEach(b=>b.classList.remove('hidden'));this.textContent='✅ 已讲完';this.disabled=true;}
+  }
+};
+
+/* 层3：正确项 = 选项字母等于 ans */
+document.getElementById('exBox').innerHTML=EX.exclude.map(x=>{
+  const isAns=x.o===EX.ans;
+  return `<div class="ex ${isAns?'ok':'no'}">
+    <div class="top"><span class="k">${esc(x.o)}</span><span class="tag">${isAns?'✅ 保留 · 答案':'❌ 排除'}</span></div>
+    <div class="r">${esc(x.r)}</div>
+  </div>`;
+}).join('');
+
+/* 层4：拆分 analysis 的 5 段 */
+const icons={'体系定位':'🧭','识别信号':'📡','本质':'💡','通式':'🔑','易混·易错链':'⚠️'};
+const rows=EX.analysis.split('\n').filter(Boolean).map(line=>{
+  line=line.replace(/^-\s*/,'');
+  const ci=line.indexOf('：');
+  const k=ci>0?line.slice(0,ci):'要点';
+  let v=ci>0?line.slice(ci+1):line;
+  const alert=/易混|易错/.test(k);
+  const vhtml=alert?`<div class="warn">${rich(v)}</div>`:rich(v)
+    .replace(/`([^`]+)`/g,'<span class="formula">$1</span>');
+  return `<div class="row"><div class="ic">${icons[k]||'•'}</div><div class="k">${esc(k)}</div><div class="v">${vhtml}</div></div>`;
+}).join('');
+document.getElementById('anaBox').innerHTML=rows;
+
+/* 锚点平滑滚动 */
+document.querySelectorAll('.nav a').forEach(a=>a.onclick=e=>{
+  e.preventDefault();document.querySelector(a.getAttribute('href')).scrollIntoView({behavior:'smooth',block:'start'});
+});
+</script>
+</body>
+</html>

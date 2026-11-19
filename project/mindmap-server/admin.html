@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>真题数据管理台</title>
+<style>
+  :root{--bg:#0b1120;--panel:#0f172a;--panel2:#111c34;--line:#1e293b;--txt:#e2e8f0;--dim:#94a3b8;--acc:#6366f1;--ok:#10b981;--bad:#f43f5e}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+  header{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:10}
+  header h1{font-size:17px;margin:0;font-weight:800}
+  header .stat{font-size:12px;color:var(--dim);margin-left:10px}
+  header .spacer{flex:1}
+  button{cursor:pointer;font-family:inherit}
+  .btn{padding:7px 13px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#cbd5e1;font-size:12.5px;font-weight:600}
+  .btn:hover{background:#334155}
+  .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+  .btn.primary:hover{background:#4f46e5}
+  .btn.ok{background:var(--ok);border-color:var(--ok);color:#052e22}
+  .btn.danger{background:transparent;border-color:var(--bad);color:#fda4af}
+  .btn.danger:hover{background:rgba(244,63,94,.15)}
+  .btn.sm{padding:4px 9px;font-size:11.5px}
+  .layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 56px)}
+  /* 左侧树 */
+  .sidebar{border-right:1px solid var(--line);background:var(--panel);padding:14px;overflow-y:auto;max-height:calc(100vh - 56px)}
+  .sidebar h3{font-size:11px;letter-spacing:.1em;color:var(--dim);margin:6px 0 10px;text-transform:uppercase}
+  .subj{margin-bottom:8px}
+  .subj-hd{display:flex;align-items:center;gap:7px;padding:8px;border-radius:8px;cursor:pointer;font-weight:700}
+  .subj-hd:hover{background:var(--panel2)}
+  .subj-hd .dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+  .subj-hd .cnt{margin-left:auto;font-size:11px;color:var(--dim);font-weight:400}
+  .node{padding:5px 6px 5px 20px;border-radius:6px;cursor:pointer;font-size:12.5px;color:#cbd5e1;display:flex;gap:6px;align-items:center}
+  .node:hover{background:var(--panel2);color:#fff}
+  .node.sel{background:#312e81;color:#fff;font-weight:700}
+  .node .lv{font-size:9px;color:#64748b;border:1px solid #334155;padding:0 4px;border-radius:4px}
+  .node .star{color:#fbbf24}
+  .node .exn{margin-left:auto;font-size:10px;color:#818cf8}
+  /* 右侧详情 */
+  .main{padding:20px 26px;overflow-y:auto;max-height:calc(100vh - 56px)}
+  .empty{color:#64748b;text-align:center;padding:80px 20px;line-height:2}
+  .crumb{font-size:12px;color:var(--dim);margin-bottom:6px}
+  .detail-hd{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .detail-hd input{font-size:19px;font-weight:800;background:transparent;border:none;color:#fff;border-bottom:1px dashed #334155;padding:3px 0;flex:1}
+  .detail-hd input:focus{outline:none;border-color:var(--acc)}
+  .meta-row{display:flex;gap:16px;font-size:12px;color:var(--dim);margin:10px 0 18px;align-items:center;flex-wrap:wrap}
+  .meta-row label{display:flex;gap:6px;align-items:center}
+  .meta-row input[type=text]{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--txt);font-size:12px}
+  .sec-hd{display:flex;align-items:center;gap:10px;margin:22px 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .sec-hd h2{font-size:14px;margin:0;font-weight:800}
+  .sec-hd .spacer{flex:1}
+  /* 子节点列表 */
+  .child{display:flex;gap:8px;align-items:center;padding:7px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;margin-bottom:6px}
+  .child .nm{flex:1}
+  .child input{background:transparent;border:none;color:var(--txt);flex:1;font-size:13px}
+  .child input:focus{outline:none;border-bottom:1px solid var(--acc)}
+  /* 例题卡 */
+  .excard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+  .excard .top{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+  .excard .top .idx{font-size:11px;color:var(--dim);font-weight:700}
+  .excard .row{display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:start;margin-bottom:7px;font-size:12.5px}
+  .excard .row label{color:var(--dim);padding-top:6px}
+  .excard textarea,.excard input[type=text]{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 9px;color:var(--txt);font-size:12.5px;font-family:inherit;resize:vertical;line-height:1.6}
+  .excard textarea:focus,.excard input:focus{outline:none;border-color:var(--acc)}
+  .excard textarea{min-height:42px}
+  .excard .opts-grid{display:flex;flex-direction:column;gap:5px}
+  .excard .seg{display:flex;gap:6px}
+  .excard .seg button{padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--dim);font-size:11.5px}
+  .excard .seg button.on{background:#312e81;color:#c7d2fe;border-color:#6366f1}
+  .excard .acts{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--ok);color:#052e22;padding:11px 18px;border-radius:9px;font-weight:700;font-size:13px;opacity:0;transform:translateY(10px);transition:.2s;z-index:99;pointer-events:none}
+  .toast.show{opacity:1;transform:none}
+  .toast.err{background:var(--bad);color:#fff}
+  .loading{color:var(--dim)}
+  a.viewlink{color:#a5b4fc;text-decoration:none;font-size:12px}
+  a.viewlink:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 真题数据管理台</h1>
+  <span class="stat" id="statBar">加载中…</span>
+  <span class="spacer"></span>
+  <a class="viewlink" href="/canvas" target="_blank">打开画布 ↗</a>
+  <button class="btn" onclick="reload()">🔄 刷新</button>
+  <button class="btn primary" onclick="addSubject()">＋ 新建科目</button>
+</header>
+<div class="layout">
+  <div class="sidebar" id="sidebar"><div class="loading">加载科目…</div></div>
+  <div class="main" id="main"><div class="empty">← 从左侧选择一个节点<br>查看并管理它的例题</div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let TREE=null, CUR_SUBJ=null, CUR_NODE=null;
+
+function toast(msg,err){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2200)}
+async function api(url,opt){const r=await fetch(url,opt);if(!r.ok){const e=await r.text();throw new Error(e||r.status)}return r.json()}
+function jopt(method,body){return {method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}}
+
+async function reload(){
+  TREE=await api('/api/tree');
+  renderStat();renderSidebar();
+  if(CUR_SUBJ&&TREE.subjects[CUR_SUBJ]){/* 保持选中 */}
+}
+async function renderStat(){
+  const s=await api('/api/stats');
+  document.getElementById('statBar').textContent=`${s.subjects} 科目 · ${s.nodes} 节点 · ${s.examples} 例题（真题 ${s.real} / 模考 ${s.mock}）`;
+}
+function colorOf(mod){const p={图形推理:'#6366f1',定义判断:'#10b981',类比推理:'#d946ef',逻辑判断:'#f59e0b',科学推理:'#0ea5e9'};return p[mod]||'#64748b'}
+
+function renderSidebar(){
+  const sb=document.getElementById('sidebar');sb.innerHTML='<h3>科目 · 节点树</h3>';
+  TREE.order.forEach(sname=>{
+    const s=TREE.subjects[sname];
+    const box=document.createElement('div');box.className='subj';
+    const hd=document.createElement('div');hd.className='subj-hd';
+    hd.innerHTML=`<span class="dot" style="background:${colorOf(s.color)}"></span>${esc(sname)}<span class="cnt">${countEx(s)} 题</span>`;
+    hd.onclick=()=>{CUR_SUBJ=sname;CUR_NODE=null;renderSidebar();renderDetail()};
+    box.appendChild(hd);
+    if(CUR_SUBJ===sname){
+      s.branches.forEach(b=>renderTreeNode(box,b,0,sname));
+      const add=document.createElement('div');add.className='node';add.style.color='#818cf8';add.textContent='＋ 新建分支';
+      add.onclick=()=>addNode(sname,null,1);box.appendChild(add);
+    }
+    sb.appendChild(box);
+  });
+}
+function renderTreeNode(parent,n,depth,sname){
+  const d=document.createElement('div');d.className='node'+(CUR_NODE&&CUR_NODE.__id===n.__id?' sel':'');
+  d.style.paddingLeft=(20+depth*14)+'px';
+  d.innerHTML=`${n.star?'<span class="star">★</span>':''}<span class="lv">L${depth+1}</span>${esc(n.name)}${n.examples?`<span class="exn">📎${n.examples.length}</span>`:''}`;
+  d.onclick=(e)=>{e.stopPropagation();CUR_SUBJ=sname;CUR_NODE=n;renderSidebar();renderDetail()};
+  parent.appendChild(d);
+  (n.children||[]).forEach(c=>renderTreeNode(parent,c,depth+1,sname));
+}
+function countEx(s){let c=0;(function w(a){a.forEach(n=>{if(n.examples)c+=n.examples.length;if(n.children)w(n.children)})})(s.branches);return c}
+function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+
+async function renderDetail(){
+  const main=document.getElementById('main');
+  if(!CUR_SUBJ){main.innerHTML='<div class="empty">← 选择一个科目</div>';return}
+  if(!CUR_NODE){
+    const s=TREE.subjects[CUR_SUBJ];
+    main.innerHTML=`<div class="crumb">科目 / ${esc(CUR_SUBJ)}</div>
+      <div class="detail-hd"><input id="rootName" value="${esc(s.root.name)}"></div>
+      <div class="meta-row"><label>颜色 <input type="text" id="subjColor" value="${esc(s.color)}" style="width:90px"></label>
+      <label>根节点提示 <input type="text" id="rootSignal" value="${esc(s.root.signal)}" style="width:340px"></label></div>
+      <div><button class="btn ok" onclick="saveSubject()">保存科目信息</button> <button class="btn danger" onclick="delSubject()">删除科目</button></div>
+      <div class="empty" style="padding:40px">选择左侧某个节点以管理它的子节点与例题<br>或点「＋ 新建分支」添加一级节点</div>`;
+    return;
+  }
+  const n=CUR_NODE;
+  const path=findPath(TREE.subjects[CUR_SUBJ].branches,n);
+  const exs=await api('/api/examples?node_id='+n.__id);
+  const children=await api('/api/nodes?subject='+encodeURIComponent(CUR_SUBJ));
+  const kids=children.filter(x=>x.parent_id===n.__id);
+  main.innerHTML=`
+    <div class="crumb">${path.map(esc).join(' › ')}</div>
+    <div class="detail-hd"><input id="nodeName" value="${esc(n.name)}"><span class="lv" style="font-size:11px;color:#64748b">L${n.__level}</span></div>
+    <div class="meta-row">
+      <label><input type="checkbox" id="nodeStar" ${n.star?'checked':''}> ★ 弱项/易错</label>
+      <button class="btn ok sm" onclick="saveNode()">保存节点</button>
+      <button class="btn danger sm" onclick="delNode()">删除节点</button>
+    </div>
+    <div class="sec-hd"><h2>子节点</h2><span class="spacer"></span><button class="btn sm" onclick="addNode('${esc(CUR_SUBJ)}','${n.__id}',${n.__level+1})">＋ 新增子节点</button></div>
+    <div id="childList">${kids.map(k=>`<div class="child"><span class="lv">L${k.level}</span><input value="${esc(k.name)}" data-kid="${k.id}">${k.star?'<span class="star">★</span>':''}<button class="btn sm" onclick="renameChild('${k.id}',this)">改名</button><button class="btn danger sm" onclick="delChild('${k.id}')">删</button></div>`).join('')||'<div style="color:#64748b;font-size:12px">暂无子节点</div>'}</div>
+    <div class="sec-hd"><h2>例题（${exs.length}）</h2><span class="spacer"></span><button class="btn primary sm" onclick="addExample()">＋ 新增例题</button></div>
+    <div id="exList">${exs.map((e,i)=>exCard(e,i)).join('')||'<div style="color:#64748b;font-size:12px">暂无例题，点「＋ 新增例题」添加</div>'}</div>`;
+}
+function findPath(branches,target){const out=[];function rec(list){for(const n of list){if(n.__id===target.__id){out.push(n.name);return true}if(n.children&&rec(n.children)){out.push(n.name);return true}}return false}rec(branches);return out.reverse()}
+
+function exCard(e,i){
+  const opts=(e.opts||[]);
+  return `<div class="excard" id="ex-${e.id}">
+    <div class="top"><span class="idx">#${i+1}</span><span style="font-size:11px;color:#64748b">${esc(e.id)}</span><span class="spacer" style="flex:1"></span>
+      <button class="btn danger sm" onclick="delExample('${e.id}')">删除</button></div>
+    <div class="row"><label>题干</label><textarea id="q-${e.id}">${esc(e.q)}</textarea></div>
+    <div class="row"><label>题源</label><input type="text" id="src-${e.id}" value="${esc(e.src)}" placeholder="如 2025广东省考真题 第49题（含季=模考）"></div>
+    <div class="row"><label>答案</label><input type="text" id="ans-${e.id}" value="${esc(e.ans)}" placeholder="如 B 或 ABC(多选)" style="width:120px">
+      <div class="seg" style="margin-left:8px">
+        <button id="hit-${e.id}-n" class="${e.hit===null?'on':''}" onclick="setHit('${e.id}',null)">未标</button>
+        <button id="hit-${e.id}-r" class="${e.hit===true?'on':''}" onclick="setHit('${e.id}',true)">做对</button>
+        <button id="hit-${e.id}-w" class="${e.hit===false?'on':''}" onclick="setHit('${e.id}',false)">做错</button>
+      </div></div>
+    <div class="row"><label>选项</label><div class="opts-grid"><input type="text" id="opts-${e.id}" value="${esc(opts.join('\n'))}" placeholder="每行一个选项，如 A.A" style="min-height:70px"></div></div>
+    <div class="row"><label>解法</label><textarea id="solve-${e.id}">${esc(e.solve)}</textarea></div>
+    <div class="row"><label>深度解析</label><textarea id="analysis-${e.id}" style="min-height:70px">${esc(e.analysis)}</textarea></div>
+    <div class="row"><label>配图URL</label><input type="text" id="img-${e.id}" value="${esc(e.img)}" placeholder="https://... （留空则无图）"></div>
+    <div class="acts"><button class="btn ok sm" onclick="saveExample('${e.id}')">保存这道题</button></div>
+  </div>`;
+}
+function setHit(id,v){['n','r','w'].forEach(x=>document.getElementById(`hit-${id}-${x}`).classList.remove('on'));document.getElementById(`hit-${id}-${v===null?'n':v?'r':'w'}`).classList.add('on');HIT_MAP[id]=v}
+let HIT_MAP={};
+
+async function saveExample(id){
+  const opts=document.getElementById('opts-'+id).value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const body={q:document.getElementById('q-'+id).value,src:document.getElementById('src-'+id).value,
+    ans:document.getElementById('ans-'+id).value,opts,hit:(id in HIT_MAP?HIT_MAP[id]:undefined),
+    solve:document.getElementById('solve-'+id).value,analysis:document.getElementById('analysis-'+id).value,
+    img:document.getElementById('img-'+id).value};
+  try{await api('/api/examples/'+id,jopt('PUT',body));toast('✅ 例题已保存');await reload();await renderDetail()}
+  catch(e){toast('保存失败: '+e.message,true)}
+}
+async function delExample(id){if(!confirm('删除这道例题？'))return;await api('/api/examples/'+id,{method:'DELETE'});toast('已删除');await reload();await renderDetail()}
+async function addExample(){
+  if(!CUR_NODE)return;
+  try{await api('/api/examples?node_id='+CUR_NODE.__id,jopt('POST',{q:'新例题',src:'',hit:null,ans:'',opts:[],solve:'',analysis:'',img:''}));toast('✅ 已添加例题');await reload();await renderDetail()}
+  catch(e){toast('添加失败: '+e.message,true)}
+}
+async function saveNode(){const body={name:document.getElementById('nodeName').value,level:CUR_NODE.__level,star:document.getElementById('nodeStar').checked,signal:''};await api('/api/nodes/'+CUR_NODE.__id,jopt('PUT',body));toast('✅ 节点已保存');await reload()}
+async function delNode(){if(!confirm('删除节点及其所有子节点和例题？'))return;await api('/api/nodes/'+CUR_NODE.__id,{method:'DELETE'});CUR_NODE=null;toast('已删除');await reload();await renderDetail()}
+async function addNode(subj,parent,level){const name=prompt('新节点名称：');if(!name)return;await api('/api/nodes?subject='+encodeURIComponent(subj),jopt('POST',{name,level,parent_id:parent,star:false}));toast('✅ 节点已添加');await reload()}
+async function renameChild(id,btn){const inp=btn.previousElementSibling;await api('/api/nodes/'+id,jopt('PUT',{name:inp.value,level:1,star:false}));toast('✅ 已改名');await reload();await renderDetail()}
+async function delChild(id){if(!confirm('删除该子节点？'))return;await api('/api/nodes/'+id,{method:'DELETE'});toast('已删除');await reload();await renderDetail()}
+async function saveSubject(){const body={name:CUR_SUBJ,color:document.getElementById('subjColor').value,root_name:document.getElementById('rootName').value,root_signal:document.getElementById('rootSignal').value};await api('/api/subjects/'+encodeURIComponent(CUR_SUBJ),jopt('PUT',body));toast('✅ 科目已保存');await reload()}
+async function delSubject(){if(!confirm('删除整个科目及其所有数据？'))return;await api('/api/subjects/'+encodeURIComponent(CUR_SUBJ),{method:'DELETE'});CUR_SUBJ=null;CUR_NODE=null;toast('已删除');await reload();await renderDetail()}
+async function addSubject(){const name=prompt('新科目名称：');if(!name)return;await api('/api/subjects',jopt('POST',{name,color:'indigo',root_name:name}));toast('✅ 科目已添加');await reload()}
+
+reload();
+</script>
+</body>
+</html>
