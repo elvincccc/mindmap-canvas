@@ -1304,6 +1304,7 @@ function renderMethodRail(){
 (function(){
   const rail=document.getElementById('methodRail'),tog=document.getElementById('railToggle');
   if(!rail||!tog)return;
+  document.body.classList.add('rail-collapsed');   /* 默认收起，点「方法」按钮展开 */
   tog.onclick=()=>document.body.classList.toggle('rail-collapsed');
   // 从方法栏/按钮起的鼠标事件不算画布拖拽
   ['mousedown','touchstart'].forEach(ev=>rail.addEventListener(ev,e=>e.stopPropagation(),{passive:true}));
