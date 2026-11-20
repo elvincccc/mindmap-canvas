@@ -343,6 +343,10 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .zp-bestway b{font-size:10px;font-weight:800;letter-spacing:.08em;color:#C4362A;margin-right:8px}
 .zp-stg-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:5px;padding-top:5px;border-top:1px dashed #e5d4c4;font-size:10px;color:#9c9186}
 .zp-stg-meta b{font-weight:700;color:#8a7f74;margin-right:4px}
+.zp-pos{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#F4F7FA;border:1px solid #D8D0BE;border-left:2px solid #45607D;border-radius:2px;padding:7px 12px;font-size:11.5px;color:#45607D;line-height:1.5}
+.zp-pos .zp-pos-hd{font-size:10px;font-weight:800;letter-spacing:.06em;color:#C4362A;white-space:nowrap}
+.zp-pos .zp-pos-path{color:#45607D;font-weight:600;overflow-wrap:anywhere}
+.zp-pos .zp-pos-path .sep{color:#a9b6c4;margin:0 5px;font-weight:400}
 @media (max-width:760px){.zp-cols{grid-template-columns:1fr}}
 
 /* ---- 配图缩略图（点击查看大图） ---- */
@@ -898,6 +902,12 @@ function renderZpSolution(ex,i){
     h+=`<div class="zp-err"><div class="h"><span class="k">${esc(e.o||'')}</span><span class="ty">${esc(e.type||'')}</span></div><div class="why">${esc(e.why||'')}</div></div>`;
   });
   h+='</div></div></div>';
+  // ⑤ 题型定位（双栏下方通栏；无 position 则隐藏）
+  const pos=(typeof ins.position==='string'?ins.position:'').trim();
+  if(pos){
+    const path=esc(pos).split(/\s*→\s*/).join('<span class="sep">›</span>');
+    h+=`<div class="zp-pos"><span class="zp-pos-hd">伍 · 题型定位</span><span class="zp-pos-path">${path}</span></div>`;
+  }
   h+='</div>';
   return h;
 }
