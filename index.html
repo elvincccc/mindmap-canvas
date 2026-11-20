@@ -173,6 +173,10 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .ex-tag.right{background:rgba(16,185,129,.18);color:#6ee7b7;border:1px solid rgba(16,185,129,.4)}
 .ex-tag.wrong{background:rgba(244,63,94,.18);color:#fda4af;border:1px solid rgba(244,63,94,.4)}
 .ex-q{font-size:15px;line-height:1.75;color:#e2e8f0;white-space:pre-line}
+/* 数字推理竖式分数：上分子 / 水平横杠 / 下分母；currentColor 自动适配深色/朱批浅色主题 */
+.ex-q .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .12em;font-size:.92em}
+.ex-q .frac .n{border-bottom:1.6px solid currentColor;padding:0 .22em 1px}
+.ex-q .frac .d{padding:1px .22em 0}
 .ex-opts{margin:12px 0 0;display:flex;flex-direction:column;gap:7px}
 .ex-opt{font-size:14px;color:#cbd5e1;padding:9px 12px;border-radius:8px;background:#0f172a;border:1px solid #1e293b}
 .ex-actions{margin-top:12px;display:flex;gap:8px}
@@ -757,6 +761,8 @@ function moveHover(e){
 }
 function hideHover(){hoverCard.style.display='none'}
 function esc(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+// 数字推理竖式分数：先转义保证安全，再把题干里的 a/b 渲染成「上分子·横杠·下分母」
+function renderQ(s){return esc(s).replace(/(\d+)\/(\d+)/g,'<span class="frac"><span class="n">$1</span><span class="d">$2</span></span>')}
 /* 轻量富文本：**加粗** 与 ==重点== */
 function rich(s){
   return esc(s||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<span style="color:#fbbf24;font-weight:700">$1</span>');
@@ -842,7 +848,7 @@ function renderDetailList(){
     const hasAns=!!(ex.ans||ex.solve||ex.analysis||(ex.steps&&ex.steps.length)||(ex.exclude&&ex.exclude.length));
     return `<div class="ex-card" data-idx="${i}" data-uid="${uid}" data-ans="${esc(ans)}" data-multi="${multi?1:0}">
       <div class="ex-meta"><span class="ex-src">📎 ${esc(mask)} · ${esc(ex.src||'')}</span>${tag}</div>
-      <div class="ex-q">${esc(ex.q||'')}</div>
+      <div class="ex-q">${renderQ(ex.q||'')}</div>
       ${fig}
       ${opts?`<div class="ex-opts">${opts}</div>`:''}
       <div class="quiz-fb" id="${uid}-fb"></div>
