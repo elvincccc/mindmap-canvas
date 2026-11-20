@@ -15,7 +15,7 @@
 html,body{margin:0;height:100%;overflow:hidden}
 body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:var(--bg);color:var(--txt)}
 
-/* ---------- 顶部统一工具栏（整合原版散落的便签/试卷/工具按钮） ---------- */
+/* ---------- 顶部统一工具栏（试卷 / 筛选 / 工具按钮） ---------- */
 #topbar{
   position:fixed;top:0;left:0;right:0;height:50px;z-index:30;
   display:flex;align-items:center;gap:14px;padding:0 16px;
@@ -384,21 +384,28 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 #hoverCard .meta b{color:#fbbf24}
 #hoverCard .sig{font-size:11.5px;color:#94a3b8;border-top:1px solid #1e293b;margin-top:8px;padding-top:8px;line-height:1.5}
 
-/* ---------- 便签抽屉（整合为顶栏按钮唤出） ---------- */
-#stickyDrawer{
-  position:fixed;right:0;top:50px;bottom:0;width:320px;z-index:35;
-  background:rgba(15,23,42,.98);border-left:1px solid #334155;transform:translateX(105%);
-  transition:transform .22s;box-shadow:-16px 0 40px rgba(0,0,0,.5);display:flex;flex-direction:column;
-}
-#stickyDrawer.open{transform:translateX(0)}
-#stickyDrawer header{padding:14px 16px;border-bottom:1px solid #1e293b;font-weight:700;display:flex;justify-content:space-between;align-items:center}
-#stickyDrawer header button{background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer}
-#stickyBody{flex:1;overflow-y:auto;padding:14px 16px}
-.note{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12.5px;line-height:1.6}
-.note .nt{color:#fbbf24;font-weight:700;margin-bottom:3px}
-.note-add{width:100%;padding:10px;border-radius:10px;background:#0f172a;border:1px dashed #475569;color:#94a3b8;cursor:pointer;font-size:12.5px}
-.note-add:hover{border-color:var(--accent);color:#c7d2fe}
-#hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:15;font-size:11.5px;color:#64748b;background:rgba(15,23,42,.7);padding:6px 14px;border-radius:20px;border:1px solid #1e293b}
+/* ---------- 方法⇄题型 左栏（泛化到所有科目；数据源 DATA.toolbox） ---------- */
+#methodRail{position:fixed;left:0;top:50%;transform:translate(0,-50%);width:212px;max-height:calc(100vh - 90px);overflow-y:auto;z-index:34;
+  background:rgba(15,23,42,.92);border:1px solid #334155;border-left:0;border-radius:0 12px 12px 0;
+  backdrop-filter:blur(6px);padding:10px 12px;box-shadow:8px 0 28px rgba(0,0,0,.35);transition:transform .28s ease}
+body.rail-collapsed #methodRail{transform:translate(-108%,-50%)}
+#railToggle{position:fixed;left:0;top:50%;transform:translate(0,-50%);z-index:35;
+  writing-mode:vertical-rl;letter-spacing:2px;font-size:11px;font-weight:700;color:#c7d2fe;
+  background:#312e81;border:1px solid #4f46e5;border-left:0;border-radius:0 8px 8px 0;
+  padding:10px 4px;cursor:pointer;transition:left .28s ease}
+body.rail-collapsed #railToggle{left:0}
+body:not(.rail-collapsed) #railToggle{left:212px}
+.mr-hd{font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748b;margin-bottom:10px;user-select:none}
+.mr-item{margin-bottom:11px}
+.mr-name{display:block;width:100%;text-align:left;font-size:12.5px;font-weight:600;color:#e2e8f0;
+  background:none;border:0;border-radius:6px;padding:4px 6px;cursor:pointer;line-height:1.4}
+.mr-name:hover{background:rgba(99,102,241,.18)}
+.mr-name.on{color:#a5b4fc}
+.mr-chips{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px}
+.mr-chip{font-size:10px;padding:1px 6px;border-radius:99px;color:#6ee7b7;background:rgba(16,185,129,.15);
+  border:1px solid rgba(52,211,153,.3);cursor:pointer;white-space:nowrap}
+.mr-chip:hover{background:rgba(16,185,129,.3)}
+.mr-empty{font-size:11.5px;color:#64748b;line-height:1.7;padding:8px 4px}
 </style>
 </head>
 <body>
@@ -413,7 +420,6 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
       <option value="">— 试卷（全部）—</option>
     </select>
     <button class="btn" id="btnFilter" title="筛选（题源 / 对错）">▽ 筛选</button>
-    <button class="btn sticky" id="btnSticky" title="便签">🗒 便签</button>
     <button class="btn ico" id="btnCollapseAll" title="全部收起">⊖</button>
     <button class="btn ico" id="btnExpandAll" title="全部展开">⊕</button>
     <button class="btn ico" id="btnCenter" title="回到根">⌖</button>
@@ -482,13 +488,9 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 <!-- hover 预览 -->
 <div id="hoverCard"></div>
 
-<!-- 便签抽屉 -->
-<div id="stickyDrawer">
-  <header><span>🗒 便签</span><button id="stickyClose">✕</button></header>
-  <div id="stickyBody"></div>
-</div>
-
-<div id="hint">点击节点展开/收起 · 拖拽平移 · Ctrl+滚轮缩放 · 悬停看详情</div>
+<!-- 方法⇄题型 左栏（泛化到所有科目，数据源 DATA.toolbox） -->
+<button id="railToggle" type="button" title="展开/收起方法栏">方法</button>
+<div id="methodRail"></div>
 
 <script>
 /* ============================================================================
@@ -1111,7 +1113,7 @@ viewport.addEventListener('touchend',()=>{dragging=false;pinchDist=0});
 window.addEventListener('resize',()=>{applyTransform();drawEdges(lastEdges)});
 
 /* ============================================================================
- * 第三部分：UI 联动（科目切换 / 筛选 / 图例 / 便签 / 统计）
+ * 第三部分：UI 联动（科目切换 / 筛选 / 图例 / 方法栏 / 统计）
  * ============================================================================ */
 function renderSubjectTabs(){
   const box=document.getElementById('subjectTabs');box.innerHTML='';
@@ -1141,9 +1143,10 @@ async function switchSubject(name){
   }
   CUR=name;DATA=SUBJECTS[name];focusNode=null;
   rootNode=buildTree(DATA);
+  mrHl=new Set();
   fillVolSelect();
   render();defaultView();
-  renderSubjectTabs();renderStat();renderFilterStats();
+  renderSubjectTabs();renderMethodRail();renderStat();renderFilterStats();
 }
 function renderStat(){
   let subs=0,ex=0;
@@ -1249,29 +1252,62 @@ if(volSelect) volSelect.addEventListener('change',()=>applyVol(volSelect.value))
 const detailVolSelect=document.getElementById('detailVolSelect');
 if(detailVolSelect) detailVolSelect.addEventListener('change',()=>applyDetailVol(detailVolSelect.value));
 
-/* 便签（localStorage 持久化） */
-const NOTE_KEY='mm_opt_notes';
-function loadNotes(){try{return JSON.parse(localStorage.getItem(NOTE_KEY)||'[]')}catch(e){return[]}}
-function saveNotes(v){try{localStorage.setItem(NOTE_KEY,JSON.stringify(v))}catch(e){}}
-function renderNotes(){
-  const box=document.getElementById('stickyBody');box.innerHTML='';
-  const notes=loadNotes();
-  notes.forEach((n,i)=>{
-    const d=document.createElement('div');d.className='note';
-    d.innerHTML=`<div class="nt">${esc(n.title)}</div>${esc(n.text).replace(/\n/g,'<br>')}`
-      +`<div style="text-align:right;margin-top:6px"><button data-del="${i}" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:11px">删除</button></div>`;
-    box.appendChild(d);
-  });
-  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const a=loadNotes();a.splice(+b.dataset.del,1);saveNotes(a);renderNotes()});
-  const add=document.createElement('button');add.className='note-add';add.textContent='＋ 新建便签';
-  add.onclick=()=>{
-    const t=prompt('便签标题：');if(!t)return;const x=prompt('内容：');if(!x)return;
-    const a=loadNotes();a.unshift({title:t,text:x});saveNotes(a);renderNotes();
-  };
-  box.appendChild(add);
+/* 方法⇄题型 左栏（泛化到所有科目：科目切换时按 DATA.toolbox 重渲染）
+   数据源：DATA.toolbox = [{name, desc, applies:[{label, path:[模块名,子节点名,...]}]}]
+   当前数据暂无 toolbox，显示空态；后续按科目注入即可自动生效。 */
+let mrHl=new Set();  // 高亮的 path key 集合（模块名~子节点名）
+function nodeByPath(path){
+  if(!path||!path.length||!rootNode)return null;
+  let cur=rootNode;
+  for(const seg of path){
+    const nx=(cur.children||[]).find(c=>c.name===seg);
+    if(!nx)return null;
+    // 沿路展开，保证定位后可见
+    let p=nx._parent;while(p){p._open=true;p=p._parent}
+    cur=nx;
+  }
+  return cur;
 }
-document.getElementById('btnSticky').onclick=()=>{renderNotes();document.getElementById('stickyDrawer').classList.add('open')};
-document.getElementById('stickyClose').onclick=()=>document.getElementById('stickyDrawer').classList.remove('open');
+function renderMethodRail(){
+  const box=document.getElementById('methodRail');if(!box)return;
+  const tb=(DATA&&DATA.toolbox)||[];
+  if(!tb.length){
+    box.innerHTML='<div class="mr-hd">方法 ⇄ 题型</div><div class="mr-empty">本科目方法工具箱待补充。<br>后续按科目注入 toolbox 即自动显示。</div>';
+    return;
+  }
+  box.innerHTML='<div class="mr-hd">方法 ⇄ 题型</div>'+tb.map((t,i)=>{
+    const hlKey=(t.applies||[]).map(a=>(a.path||[]).join('~')).join('|');
+    const chips=(t.applies||[]).map(a=>
+      `<button type="button" class="mr-chip" data-go='${esc(JSON.stringify(a.path||[]))}'>${esc(a.label)}</button>`).join('');
+    return `<div class="mr-item"><button type="button" class="mr-name" data-hl='${esc(hlKey)}' title="${esc(t.desc||'')}">${i+1}. ${esc(t.name)}</button>`
+      +(chips?`<div class="mr-chips">${chips}</div>`:'')+`</div>`;
+  }).join('');
+  // 重画高亮态
+  box.querySelectorAll('.mr-name').forEach(b=>b.classList.toggle('on',mrHl.size>0&&(b.dataset.hl||'').split('|').some(k=>mrHl.has(k))));
+  // chip：定位到节点 + 打开详情
+  box.querySelectorAll('.mr-chip').forEach(c=>c.onclick=()=>{
+    let p=null;try{p=JSON.parse(c.dataset.go)}catch(e){}
+    if(!p||!p.length)return;
+    const n=nodeByPath(p);if(!n)return;
+    mrHl=new Set([p.join('~')]);render();centerOn(n);openDetail(n);
+    box.querySelectorAll('.mr-name').forEach(b=>b.classList.remove('on'));
+  });
+  // 方法名：高亮其所有适用题型，并定位第一个
+  box.querySelectorAll('.mr-name').forEach(b=>b.onclick=()=>{
+    const keys=(b.dataset.hl||'').split('|').filter(Boolean);
+    mrHl=new Set(keys);render();
+    if(keys.length){const n=nodeByPath(keys[0].split('~'));if(n)centerOn(n)}
+    box.querySelectorAll('.mr-name').forEach(x=>x.classList.toggle('on',x===b));
+  });
+}
+/* 左栏收起/展开 */
+(function(){
+  const rail=document.getElementById('methodRail'),tog=document.getElementById('railToggle');
+  if(!rail||!tog)return;
+  tog.onclick=()=>document.body.classList.toggle('rail-collapsed');
+  // 从方法栏/按钮起的鼠标事件不算画布拖拽
+  ['mousedown','touchstart'].forEach(ev=>rail.addEventListener(ev,e=>e.stopPropagation(),{passive:true}));
+})();
 
 /* 工具栏按钮 */
 document.getElementById('btnFit').onclick=fitView;
@@ -1308,7 +1344,7 @@ function boot(d){
   rootNode=buildTree(DATA);
   fillVolSelect();
   render();defaultView();
-  renderStat();renderFilterStats();
+  renderMethodRail();renderStat();renderFilterStats();
 }
 loadData().then(boot).catch(err=>{
   const v=document.getElementById('viewport');
