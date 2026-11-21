@@ -636,8 +636,15 @@ function applyPalette(d){
   d.palette=d.palette||def;
   return d;
 }
+/* 数据请求统一加时间戳防 CDN/浏览器缓存：改数据后刷新即生效，不必等 max-age 过期。
+   同一次页面加载共用一个戳；带 ? 的 URL 用 & 追加，兼容验证脚本注入的 cb 参数。 */
+const DATA_CACHE_TS = Date.now();
+function fetchURL(file){
+  const u = file + (file.indexOf('?')>=0 ? '&' : '?') + '_t=' + DATA_CACHE_TS;
+  return fetch(u);
+}
 function fetchSubject(file){
-  return fetch(file).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status+' '+file);return r.json()});
+  return fetchURL(file).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status+' '+file);return r.json()});
 }
 function loadData(){
   const useApi = new URLSearchParams(location.search).get('api')==='1';
@@ -649,7 +656,7 @@ function loadData(){
 }
 function loadStatic(){
   /* 优先分科清单 */
-  return fetch('data/manifest.json').then(r=>{if(!r.ok)throw new Error('no manifest');return r.json()})
+  return fetchURL('data/manifest.json').then(r=>{if(!r.ok)throw new Error('no manifest');return r.json()})
     .then(m=>{
       applyManifest(m);
       const first=ORDER[0],file=SUBJECT_FILES[first];
@@ -661,7 +668,7 @@ function loadStatic(){
     })
     .catch(err=>{
       console.warn('分科加载不可用，回退完整 data.json',err.message);
-      return fetch('data.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+      return fetchURL('data.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
         .catch(()=>{throw new Error('无法载入数据：请用本地服务器打开（python3 -m http.server），不要直接双击 HTML');});
     });
 }
@@ -1226,7 +1233,7 @@ function jumpToSection(id){
 /* ---- 文档中心 ---- */
 async function loadDocs(){
   if(DOCS)return DOCS;
-  const r=await fetch('data/docs.json');
+  const r=await fetchURL('data/docs.json');
   if(!r.ok)throw new Error('docs.json HTTP '+r.status);
   DOCS=(await r.json()).docs; return DOCS;
 }
@@ -1274,7 +1281,7 @@ document.getElementById('docSearch').oninput=e=>renderDocList(e.target.value);
 /* ---- 方法提炼 ---- */
 async function loadMethods(){
   if(METHODS)return METHODS;
-  const r=await fetch('data/methods.json');
+  const r=await fetchURL('data/methods.json');
   if(!r.ok)throw new Error('methods.json HTTP '+r.status);
   METHODS=(await r.json()).methods; return METHODS;
 }
