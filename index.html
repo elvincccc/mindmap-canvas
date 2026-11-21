@@ -925,6 +925,7 @@ let detailFromMethod=false;  // 弹窗是否由方法提炼「关联例题」跳
 let detailAllExs=[];     // 当前节点全部例题（未筛选，供筛选器统计）
 let activeExIdx=-1;      // 当前激活的题索引
 let detailVol='';        // 弹窗内试卷筛选（卷名，''=全部）
+let detailNodePath=[];   // 当前弹窗节点的挂载路径（题型定位唯一数据源=导图树，单一维护）
 
 function openDetail(n,ignoreFilter,fromMethod){
   detailFromMethod=!!fromMethod;  // 仅方法提炼「关联例题」跳转(fromMethod=true)置位；例题节点/普通点题不置，关闭不回方法面板
@@ -935,6 +936,7 @@ function openDetail(n,ignoreFilter,fromMethod){
   document.getElementById('detailLeft').classList.remove('zp-side');
   document.getElementById('detailRight').classList.remove('zp-side');
   const path=[];let cur=n;while(cur){path.unshift(cur.name);cur=cur._parent}
+  detailNodePath=path;   // 题型定位派生自此（唯一数据源），不再依赖手写的 insight.position
   document.getElementById('detailTitle').textContent=n.name;
   document.getElementById('detailPath').textContent=path.join(' › ');
   detailAllExs=nodeExamples(n,ignoreFilter).sort((a,b)=>{
@@ -1043,10 +1045,12 @@ function renderZpSolution(ex,i){
     h+=`<div class="zp-err"><div class="h"><span class="k">${esc(e.o||'')}</span><span class="ty">${esc(e.type||'')}</span></div><div class="why">${esc(e.why||'')}</div></div>`;
   });
   h+='</div></div></div>';
-  // ⑤ 题型定位（双栏下方通栏；无 position 则隐藏）
-  const pos=(typeof ins.position==='string'?ins.position:'').trim();
-  if(pos){
-    const path=esc(pos).split(/\s*→\s*/).join('<span class="sep">›</span>');
+  // ⑤ 题型定位（派生自题目在导图树的挂载路径——单一数据源，与节点永远一致；不再读手写 position）
+  //    兼容：若将来从方法库等非导图入口打开、detailNodePath 为空，才回退到 ins.position
+  const locPath=(Array.isArray(detailNodePath)&&detailNodePath.length)?detailNodePath
+              :(typeof ins.position==='string'?ins.position.split(/\s*→\s*/).map(s=>s.trim()):[]);
+  if(locPath.length){
+    const path=esc(locPath.join(' → ')).split(/\s*→\s*/).join('<span class="sep">›</span>');
     h+=`<div class="zp-pos"><span class="zp-pos-hd">伍 · 题型定位</span><span class="zp-pos-path">${path}</span></div>`;
   }
   h+='</div>';
