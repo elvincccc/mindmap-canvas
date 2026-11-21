@@ -463,6 +463,12 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .meth-dims th,.meth-dims td{border:1px solid var(--panel-b);padding:8px 10px;text-align:left;vertical-align:top;background:#0f172a}
 .meth-dims th{background:#1e293b;color:#cbd5e1;font-size:11px}
 .meth-dims tr.key-col td{background:rgba(99,102,241,.08)}
+.meth-steps{list-style:none;counter-reset:mstep;margin:0;padding:0}
+.meth-steps li{counter-increment:mstep;position:relative;padding:9px 12px 9px 42px;margin-bottom:7px;
+  background:#0f172a;border:1px solid var(--panel-b);border-radius:6px;color:#dbe3ee;font-size:13px;line-height:1.65}
+.meth-steps li::before{content:counter(mstep);position:absolute;left:11px;top:9px;width:22px;height:22px;
+  border-radius:50%;background:rgba(99,102,241,.22);border:1px solid rgba(129,140,248,.6);
+  color:#c7d2fe;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
 .meth-trigger{color:#cbd5e1;font-size:13px}
 .meth-key{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 12px;color:#e2e8f0;font-size:13px}
 .meth-mn{background:linear-gradient(90deg,#1e293b,#0f172a);border-left:3px solid #f59e0b;
@@ -1334,6 +1340,11 @@ function switchMethod(id){
     h+='<div class="meth-sect"><h4>排查维度（按优先级）</h4><table class="meth-dims"><tr><th>维度</th><th>看什么 / 常见规律</th></tr>'
       +m.dims.map(d=>'<tr class="'+(d.key?'key-col':'')+'"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.law)+'</td></tr>').join('')
       +'</table></div>';
+  }
+  if((m.steps||[]).length){
+    h+='<div class="meth-sect"><h4>解题步骤（按顺序）</h4><ol class="meth-steps">'
+      +m.steps.map(s=>'<li>'+esc(s)+'</li>').join('')
+      +'</ol></div>';
   }
   if(m.key)h+='<div class="meth-sect"><h4>核心方法</h4><div class="meth-key">'+esc(m.key)+'</div></div>';
   if(m.mnemonic)h+='<div class="meth-sect"><h4>口诀</h4><div class="meth-mn">'+esc(m.mnemonic)+'</div></div>';
