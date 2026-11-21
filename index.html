@@ -584,6 +584,20 @@ let EXVOL='';   // 试卷筛选（卷名，''=全部）；不做持久化
 
 function isMock(src){return /季/.test(String(src||''))}
 function volOf(src){const s=String(src||''),i=s.indexOf(' 第');return i>0?s.slice(0,i):s}
+/* 弹窗例题排序：试卷(真题按年份升序在前，模考按季数升序在后) + 卷内题号升序 */
+function exSortKey(ex){
+  const s=String((ex&&ex.src)||'');
+  const mock=/季/.test(s);                       // 含"季"=模考
+  let year=9999;
+  const ym=s.match(/(20\d{2})/);                 // 2023/2024/2025/2026
+  if(ym)year=+ym[1];
+  else{const y2=s.match(/(\d{2})年/);if(y2)year=2000+ +y2[1]} // "26年"→2026
+  const seasonM=s.match(/(\d+)\s*季/);           // 模考季数
+  const season=seasonM?+seasonM[1]:0;
+  const numM=s.match(/第\s*(\d+)\s*题/);         // 卷内题号
+  const num=numM?+numM[1]:9999;
+  return [mock?1:0, year, season, num];
+}
 function exMatch(ex){
   if(EXFILTER!=='all'){ if(EXFILTER==='right' ? ex.hit!==true : ex.hit!==false) return false; }
   if(EXSRC!=='all'){ const m=isMock(ex.src); if(EXSRC==='mock'?!m:m) return false; }
@@ -800,7 +814,11 @@ function openDetail(n){
   const path=[];let cur=n;while(cur){path.unshift(cur.name);cur=cur._parent}
   document.getElementById('detailTitle').textContent=n.name;
   document.getElementById('detailPath').textContent=path.join(' › ');
-  detailAllExs=nodeExamples(n);
+  detailAllExs=nodeExamples(n).sort((a,b)=>{
+    const ka=exSortKey(a),kb=exSortKey(b);
+    for(let i=0;i<ka.length;i++){if(ka[i]!==kb[i])return ka[i]-kb[i]}
+    return 0;
+  });
   detailVol='';
   fillDetailVolSelect();
   applyDetailVol('',false);
