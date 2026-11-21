@@ -10,6 +10,8 @@
 子命令：
   smoke [url]                       标准冒烟：JS错误/404/关键按钮/节点数/弹窗打开
   panel [url] --name 方法提炼         面板专项：打开/卡片数/signal+steps渲染/关联例题跳转高亮/关闭返回
+  filter [url]                      筛选专项：试卷/对错/真题模考筛选是否作用于导图末级例题节点(📄) + 复位
+  reveal [url]                      答案揭晓专项：打开不暴露答案/无大印章/无练习按钮/点选项即判题/右栏自动展开
   custom [url] --checks checks.json  自定义断言清单（见下方格式）
   url 快捷值：local / online；也可直接给完整 URL
 
@@ -158,6 +160,120 @@ def cmd_panel(args, pw):
     return ok
 
 
+def cmd_reveal(args, pw):
+    """答案揭晓专项：验证「先看题自己解→点选项才出答案」交互契约。
+    回归点 2026-11-21：原解析答案大印章默认暴露、需先点练习按钮选项才可点。"""
+    url = resolve_url(args.url)
+    browser, page, errs, bad = make_page(pw, url)
+    pr = Probe(page)
+    print(f'=== reveal @ {url} ===')
+    page.evaluate("document.getElementById('btnExpandAll').click()")
+    page.wait_for_timeout(600)
+    # 切到言语理解科目
+    page.evaluate("""(() => {const els=[...document.querySelectorAll('*')]
+        .filter(e=>e.children.length===0 && e.textContent.trim()==='言语理解');
+        if(els[0])els[0].click();})()""")
+    page.wait_for_timeout(1000)
+    opened = False
+    for i in range(page.locator('.ex-open-btn').count()):
+        try:
+            page.locator('.ex-open-btn').nth(i).click(timeout=1500)
+            page.wait_for_timeout(500)
+            if page.locator('#detailBox').evaluate("e=>e.classList.contains('open')"):
+                opened = True; break
+        except Exception:
+            pass
+    pr.ck('弹窗可打开', opened)
+    if not opened:
+        browser.close()
+        return pr.summary(f'reveal {args.url}')
+    cards = page.locator('.ex-card')
+    target = None
+    for i in range(cards.count()):
+        c = cards.nth(i)
+        if c.locator('.ex-opt').count() >= 2 and (c.get_attribute('data-ans') or '').strip():
+            target = c; break
+    pr.ck('存在可作答卡片', target is not None)
+    if target is not None:
+        pr.ck('打开时答案未暴露(左栏)', target.locator('.ans-reveal').evaluate("e=>!e.innerHTML.trim()"))
+        pr.ck('无大红印章', page.locator('.zp-seal').count() == 0)
+        pr.ck('无练习按钮', page.locator('.quiz-start').count() == 0)
+        nopt = target.locator('.ex-opt').count()
+        pr.ck('选项默认可点', target.locator('.ex-opt.pickable').count() == nopt and nopt >= 2,
+              f'pickable={target.locator(".ex-opt.pickable").count()}/{nopt}')
+        ans = (target.get_attribute('data-ans') or '').strip()
+        wrong_key = next((k for k in 'ABCD' if k not in ans), None)
+        wrong = target.locator(f'.ex-opt[data-key="{wrong_key}"]')
+        if wrong.count() == 0:
+            wrong = target.locator('.ex-opt').first
+        wrong.click()
+        page.wait_for_timeout(750)
+        pr.ck('判题后答案揭晓(左栏)', ans in target.locator('.ans-reveal').inner_text(), f'ans={ans}')
+        pr.ck('右栏解析自动展开', page.locator('#ansPanel').evaluate("e=>e.innerHTML.length>100"))
+        pr.ck('判题后选项锁定', target.locator('.ex-opt.locked').count() == nopt)
+    pr.ck('JS 零错误', len(errs) == 0, str(errs[:2]))
+    pr.ck('无 404 资源', len(bad) == 0, str(bad[:2]))
+    ok = pr.summary(f'reveal {args.url}')
+    browser.close()
+    return ok
+
+
+def cmd_filter(args, pw):
+    """筛选专项：验证试卷/对错/真题模考筛选真正作用于导图末级例题节点(📄)。
+    回归 bug 2026-11-21：例题节点化后只 filter 了弹窗计数，导图节点本身纹丝不动。"""
+    url = resolve_url(args.url)
+    browser, page, errs, bad = make_page(pw, url)
+    pr = Probe(page)
+    print(f'=== filter @ {url} ===')
+    # 展开全部，让所有末级例题节点进入 DOM
+    try:
+        page.click('#btnExpandAll', timeout=3000)
+        page.wait_for_timeout(800)
+    except Exception as e:
+        pr.ck('展开全部可点击', False, str(e)[:50])
+    COUNT = "[...document.querySelectorAll('.node')].filter(e=>e.textContent.includes('📄')).length"
+    n_all = page.evaluate(COUNT)
+    pr.ck('默认有例题节点', n_all > 0, f'全部={n_all}')
+
+    # 试卷筛选
+    vol = page.evaluate("""(() => {const s=document.getElementById('volSelect');
+        const o=[...s.options].find(o=>o.value); return o?o.value:'';})()""")
+    if vol:
+        page.select_option('#volSelect', vol)
+        page.wait_for_timeout(700)
+        n_vol = page.evaluate(COUNT)
+        pr.ck('试卷筛选生效', 0 < n_vol < n_all, f'{n_all}→{n_vol} ({vol})')
+        page.select_option('#volSelect', '')
+        page.wait_for_timeout(500)
+        pr.ck('试卷复位恢复', page.evaluate(COUNT) == n_all)
+    else:
+        pr.ck('试卷筛选生效', False, '无可选卷')
+
+    # 对错筛选：做错
+    page.evaluate('document.querySelector(\'#filterPopover [data-ex="wrong"]\').click()')
+    page.wait_for_timeout(700)
+    n_wrong = page.evaluate(COUNT)
+    pr.ck('对错筛选生效', 0 < n_wrong < n_all, f'{n_all}→{n_wrong}')
+    page.evaluate('document.querySelector(\'#filterPopover [data-ex="all"]\').click()')
+    page.wait_for_timeout(500)
+    pr.ck('对错复位恢复', page.evaluate(COUNT) == n_all)
+
+    # 真题/模考筛选
+    page.evaluate('document.querySelector(\'#filterPopover [data-src="mock"]\').click()')
+    page.wait_for_timeout(700)
+    n_mock = page.evaluate(COUNT)
+    pr.ck('真题模考筛选生效', 0 < n_mock < n_all, f'{n_all}→{n_mock}')
+    page.evaluate('document.querySelector(\'#filterPopover [data-src="all"]\').click()')
+    page.wait_for_timeout(500)
+    pr.ck('真题模考复位恢复', page.evaluate(COUNT) == n_all)
+
+    pr.ck('JS 零错误', len(errs) == 0, str(errs[:2]))
+    pr.ck('无 404 资源', len(bad) == 0, str(bad[:2]))
+    ok = pr.summary(f'filter {args.url}')
+    browser.close()
+    return ok
+
+
 def cmd_custom(args, pw):
     url = resolve_url(args.url)
     with open(args.checks, encoding='utf-8') as f:
@@ -206,11 +322,16 @@ def main():
     p_custom = sub.add_parser('custom', help='自定义断言清单')
     p_custom.add_argument('url', nargs='?', default='local')
     p_custom.add_argument('--checks', required=True, help='checks.json 路径')
+    p_filter = sub.add_parser('filter', help='筛选专项（导图例题节点随试卷/对错/真题模考筛选变化）')
+    p_filter.add_argument('url', nargs='?', default='local')
+    p_reveal = sub.add_parser('reveal', help='答案揭晓专项（先看题→点选项才出答案）')
+    p_reveal.add_argument('url', nargs='?', default='local')
     args = ap.parse_args()
 
     from playwright.sync_api import sync_playwright
     with sync_playwright() as pw:
-        ok = {'smoke': cmd_smoke, 'panel': cmd_panel, 'custom': cmd_custom}[args.cmd](args, pw)
+        ok = {'smoke': cmd_smoke, 'panel': cmd_panel, 'custom': cmd_custom,
+              'filter': cmd_filter, 'reveal': cmd_reveal}[args.cmd](args, pw)
     sys.exit(0 if ok else 1)
 
 

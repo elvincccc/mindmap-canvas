@@ -138,11 +138,13 @@ def check_toolbar(page):
 
 
 def check_volselect(page):
+    # 试卷数随录入增长（2026-11-20 已 6 套+全部=7），不写死具体数字：
+    # 只要求恰好 1 个下拉框、至少 2 个 option（"全部"+至少 1 套试卷）。
     sel_cnt = page.locator("#volSelect").count()
     opt_cnt = page.locator("#volSelect option").count()
-    if sel_cnt != 1 or opt_cnt != 6:
-        raise CheckFailed("#volSelect 数量={}，option 数量={}（期望 6）".format(sel_cnt, opt_cnt))
-    return "下拉框存在且含 {} 个 option".format(opt_cnt)
+    if sel_cnt != 1 or opt_cnt < 2:
+        raise CheckFailed("#volSelect 数量={}，option 数量={}（期望 1 个下拉框、≥2 个 option）".format(sel_cnt, opt_cnt))
+    return "下拉框存在且含 {} 个 option（试卷，随录入增长）".format(opt_cnt)
 
 
 def check_expand_collapse(page):
@@ -200,19 +202,21 @@ def check_ans_tab(page):
     if ans_btn.count() == 0:
         raise CheckFailed("弹窗内无 .ans-open 按钮，无法验证右栏解析 Tab")
     ans_btn.first.click(timeout=5000)
-    # 兼容两套解析结构：v2 朱批（.zp-seal/.zp-step）与旧 Tab（.ans-tab）
+    # 兼容两套解析结构：v2 朱批与旧 Tab（.ans-tab）。
+    # 注意（6.44）：新 UI 已删除大印章 .zp-seal，答案延时到左栏揭晓，
+    # v2 解析展开的真实标志改为 .zp-step / .zp-hero，不能再等 .zp-seal。
     page.wait_for_function(
         "() => document.querySelectorAll('#detailRight .ans-tab').length>0 "
-        "|| document.querySelectorAll('#ansPanel .zp-seal').length>0",
+        "|| document.querySelectorAll('#detailRight .zp-step').length>0 "
+        "|| document.querySelectorAll('#detailRight .zp-hero').length>0",
         timeout=5000,
     )
-    v2 = page.locator("#ansPanel .zp-seal").count()
-    if v2:
-        steps = page.locator("#ansPanel .zp-step").count()
-        return "右栏 v2 朱批解析存在（印章 1 · 步骤 {}）".format(steps)
+    steps = page.locator("#detailRight .zp-step").count()
+    if steps or page.locator("#detailRight .zp-hero").count():
+        return "右栏 v2 朱批解析存在（步骤 {} · 无大印章答案）".format(steps)
     n = page.locator("#detailRight .ans-tab").count()
     if n == 0:
-        raise CheckFailed("点击解析后 #detailRight 下既无 .ans-tab 也无 .zp-seal")
+        raise CheckFailed("点击解析后 #detailRight 下无 .ans-tab/.zp-step/.zp-hero")
     return "右栏解析 Tab 存在（{} 个 .ans-tab）".format(n)
 
 
@@ -250,7 +254,7 @@ def browser_checks(report, url):
         page.wait_for_selector(".node", timeout=30000)
 
         report.run("工具栏按钮", lambda: check_toolbar(page))
-        report.run("试卷下拉框(6项)", lambda: check_volselect(page))
+        report.run("试卷下拉框(≥2项)", lambda: check_volselect(page))
         report.run("默认收起/展开节点数", lambda: check_expand_collapse(page))
         report.run("选卷后 countEx 变化", lambda: check_volume_change(page))
         report.run("弹窗与右栏解析区", lambda: check_popup(page))
