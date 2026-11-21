@@ -448,6 +448,13 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .doc-body ul,.doc-body ol{padding-left:22px}
 /* 方法面板专属 */
 .meth-list-min{padding:6px 0}
+.meth-group-hd{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:#fbbf24;
+  padding:13px 10px 5px;margin-top:3px;border-top:1px solid #1e293b}
+.meth-list-min .meth-group-hd:first-child{border-top:none;margin-top:0;padding-top:6px}
+.meth-contrast{width:100%;border-collapse:collapse;font-size:12.5px}
+.meth-contrast th,.meth-contrast td{border:1px solid var(--panel-b);padding:8px 10px;text-align:left;vertical-align:top;background:#0f172a}
+.meth-contrast th{background:#1e293b;color:#cbd5e1;font-size:11px}
+.meth-contrast td.ty{color:#fbbf24;font-weight:700;white-space:nowrap}
 .meth-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .meth-card-hd .nm{font-size:20px;font-weight:800;color:#fff}
 .meth-ex-btn{background:#1e293b;color:#fbbf24;border:1px solid #f59e0b;border-radius:8px;
@@ -1331,15 +1338,30 @@ function closeMethods(){
   methodViewer.classList.remove('open'); methodBackdrop.style.display='none';
   document.getElementById('methodSearch').value='';
 }
+const METH_MODULE_ORDER=['图形推理','逻辑判断','定义判断','类比推理','片段阅读','逻辑填空','语句表达','数量关系','资料分析','常识应用','通用'];
 function renderMethList(filter){
   const box=document.getElementById('methList'); box.innerHTML='';
   const q=(filter||'').trim().toLowerCase();
+  const groups={};
   METHODS.forEach(m=>{
     if(q && !m.name.toLowerCase().includes(q))return;
-    const b=document.createElement('button');
-    b.className='doc-item'+(m.id===methCurId?' on':''); b.textContent=m.name;
-    b.onclick=()=>switchMethod(m.id);
-    box.appendChild(b);
+    const mod=m.module||'通用';
+    (groups[mod]=groups[mod]||[]).push(m);
+  });
+  const mods=Object.keys(groups).sort((a,b)=>{
+    const ia=METH_MODULE_ORDER.indexOf(a), ib=METH_MODULE_ORDER.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  if(!mods.length){box.innerHTML='<p style="color:#94a3b8;padding:10px 12px">无匹配方法</p>';return;}
+  mods.forEach(mod=>{
+    const gh=document.createElement('div'); gh.className='meth-group-hd'; gh.textContent=mod;
+    box.appendChild(gh);
+    groups[mod].forEach(m=>{
+      const b=document.createElement('button');
+      b.className='doc-item'+(m.id===methCurId?' on':''); b.textContent=m.name;
+      b.onclick=()=>switchMethod(m.id);
+      box.appendChild(b);
+    });
   });
 }
 function switchMethod(id){
@@ -1354,6 +1376,11 @@ function switchMethod(id){
   h+='</div>';
   if(m.signal)h+='<div class="meth-signal">'+esc(m.signal)+'</div>';
   if(m.trigger)h+='<div class="meth-sect"><h4>触发场景</h4><div class="meth-trigger">'+esc(m.trigger)+'</div></div>';
+  if((m.contrasts||[]).length){
+    h+='<div class="meth-sect"><h4>题型辨析（问 → 做）</h4><table class="meth-contrast"><tr><th>题型</th><th>怎么问</th><th>怎么做</th></tr>'
+      +m.contrasts.map(c=>'<tr><td class="ty">'+esc(c.type)+'</td><td>'+esc(c.ask)+'</td><td>'+esc(c.do)+'</td></tr>').join('')
+      +'</table></div>';
+  }
   if((m.dims||[]).length){
     h+='<div class="meth-sect"><h4>排查维度（按优先级）</h4><table class="meth-dims"><tr><th>维度</th><th>看什么 / 常见规律</th></tr>'
       +m.dims.map(d=>'<tr class="'+(d.key?'key-col':'')+'"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.law)+'</td></tr>').join('')
