@@ -451,10 +451,6 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .meth-group-hd{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:#fbbf24;
   padding:13px 10px 5px;margin-top:3px;border-top:1px solid #1e293b}
 .meth-list-min .meth-group-hd:first-child{border-top:none;margin-top:0;padding-top:6px}
-.meth-contrast{width:100%;border-collapse:collapse;font-size:12.5px}
-.meth-contrast th,.meth-contrast td{border:1px solid var(--panel-b);padding:8px 10px;text-align:left;vertical-align:top;background:#0f172a}
-.meth-contrast th{background:#1e293b;color:#cbd5e1;font-size:11px}
-.meth-contrast td.ty{color:#fbbf24;font-weight:700;white-space:nowrap}
 .meth-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .meth-card-hd .nm{font-size:20px;font-weight:800;color:#fff}
 .meth-ex-btn{background:#1e293b;color:#fbbf24;border:1px solid #f59e0b;border-radius:8px;
@@ -468,24 +464,10 @@ body{font-family:'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;ba
 .meth-ex:hover{background:#1e293b;color:#fff}
 .meth-signal{background:rgba(245,158,11,.08);border:1px solid #f59e0b;border-left:3px solid #f59e0b;
   border-radius:6px;padding:11px 14px;margin-bottom:14px;font-size:14px;font-weight:700;color:#fbbf24}
-.meth-sect{margin-bottom:16px}
-.meth-sect>h4{font-size:11px;font-weight:800;letter-spacing:.1em;color:#a5b4fc;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #1e293b}
-.meth-dims{width:100%;border-collapse:collapse;font-size:12.5px}
-.meth-dims th,.meth-dims td{border:1px solid var(--panel-b);padding:8px 10px;text-align:left;vertical-align:top;background:#0f172a}
-.meth-dims th{background:#1e293b;color:#cbd5e1;font-size:11px}
-.meth-dims tr.key-col td{background:rgba(99,102,241,.08)}
-.meth-steps{list-style:none;counter-reset:mstep;margin:0;padding:0}
-.meth-steps li{counter-increment:mstep;position:relative;padding:9px 12px 9px 42px;margin-bottom:7px;
-  background:#0f172a;border:1px solid var(--panel-b);border-radius:6px;color:#dbe3ee;font-size:13px;line-height:1.65}
-.meth-steps li::before{content:counter(mstep);position:absolute;left:11px;top:9px;width:22px;height:22px;
-  border-radius:50%;background:rgba(99,102,241,.22);border:1px solid rgba(129,140,248,.6);
-  color:#c7d2fe;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
-.meth-trigger{color:#cbd5e1;font-size:13px}
-.meth-key{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 12px;color:#e2e8f0;font-size:13px}
-.meth-mn{background:linear-gradient(90deg,#1e293b,#0f172a);border-left:3px solid #f59e0b;
-  border-radius:4px;padding:11px 13px;font-size:13px;line-height:1.8;font-weight:600;color:#fde68a}
-.meth-pit{margin:0;padding-left:20px;color:var(--txt-dim);font-size:12.5px}
-.meth-pit li{margin:4px 0}
+/* 正文复用 .doc-body 的 h3/表格/列表固定配色，这里仅收紧段间距 */
+.meth-body h3:first-child{margin-top:0}
+.meth-body ul,.meth-body ol{margin:8px 0;padding-left:22px}
+.meth-body li{margin:4px 0;line-height:1.7}
 .meth-doc{display:inline-block;margin-top:8px;color:#a5b4fc;font-size:12px;cursor:pointer;text-decoration:underline}
 .meth-doc:hover{color:#fff}
 @media(max-width:820px){
@@ -1369,31 +1351,14 @@ function switchMethod(id){
   methCurId=id;
   document.querySelectorAll('#methList .doc-item').forEach(x=>x.classList.toggle('on',x.textContent===m.name));
   const body=document.getElementById('methBody');
+  // 正文统一是构建期渲染好的 body_html（markdown→HTML），复用 .doc-body 的标题/表格/列表固定配色
   let h='<div class="meth-card-hd"><span class="nm">'+esc(m.name)+'</span>';
   if((m.examples||[]).length){
     h+='<button class="meth-ex-btn" id="methExBtn">关联例题 '+m.examples.length+' ▸</button>';
   }
   h+='</div>';
   if(m.signal)h+='<div class="meth-signal">'+esc(m.signal)+'</div>';
-  if(m.trigger)h+='<div class="meth-sect"><h4>触发场景</h4><div class="meth-trigger">'+esc(m.trigger)+'</div></div>';
-  if((m.contrasts||[]).length){
-    h+='<div class="meth-sect"><h4>题型辨析（问 → 做）</h4><table class="meth-contrast"><tr><th>题型</th><th>怎么问</th><th>怎么做</th></tr>'
-      +m.contrasts.map(c=>'<tr><td class="ty">'+esc(c.type)+'</td><td>'+esc(c.ask)+'</td><td>'+esc(c.do)+'</td></tr>').join('')
-      +'</table></div>';
-  }
-  if((m.dims||[]).length){
-    h+='<div class="meth-sect"><h4>排查维度（按优先级）</h4><table class="meth-dims"><tr><th>维度</th><th>看什么 / 常见规律</th></tr>'
-      +m.dims.map(d=>'<tr class="'+(d.key?'key-col':'')+'"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.law)+'</td></tr>').join('')
-      +'</table></div>';
-  }
-  if((m.steps||[]).length){
-    h+='<div class="meth-sect"><h4>解题步骤（按顺序）</h4><ol class="meth-steps">'
-      +m.steps.map(s=>'<li>'+esc(s)+'</li>').join('')
-      +'</ol></div>';
-  }
-  if(m.key)h+='<div class="meth-sect"><h4>核心方法</h4><div class="meth-key">'+esc(m.key)+'</div></div>';
-  if(m.mnemonic)h+='<div class="meth-sect"><h4>口诀</h4><div class="meth-mn">'+esc(m.mnemonic)+'</div></div>';
-  if((m.pitfalls||[]).length)h+='<div class="meth-sect"><h4>易错点</h4><ul class="meth-pit">'+m.pitfalls.map(p=>'<li>'+esc(p)+'</li>').join('')+'</ul></div>';
+  h+='<div class="meth-body">'+m.body_html+'</div>';
   if(m.doc)h+='<div class="meth-doc" id="methDocLink">📄 详细版：'+esc(m.doc)+'</div>';
   // 关联例题列表（默认收起）
   if((m.examples||[]).length){
