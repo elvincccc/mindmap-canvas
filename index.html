@@ -696,7 +696,7 @@ function loadStatic(){
 /* ============================================================================
  * 第二部分：渲染引擎 —— 只读当前 DATA，与具体内容无关
  * ============================================================================ */
-const COLW=[220,235,235,245,265,265], COLH=[54,46,42,40,38,38];
+const COLW=[220,235,235,245,265,265,265], COLH=[54,46,42,40,38,38,38];  /* 第7列供例题节点(level6)使用 */
 const GAPX=54,GAPY=12,PAD=26;
 const xOf=[];(function(){let a=PAD;for(let i=0;i<COLW.length;i++){xOf.push(a);a+=COLW[i]+GAPX}})();
 const viewport=document.getElementById('viewport'),stage=document.getElementById('stage');
@@ -743,7 +743,7 @@ function buildTree(D){
       const name = isObj ? (item.name||'') : String(item);
       const star = isObj ? !!item.star : false;
       const examples = isObj ? (item.examples||[]) : [];
-      const node = makeNode(name, level, color, parent, {star, examples, mod, signal:isObj?item.signal:undefined});
+      const node = makeNode(name, level, color, parent, {star, examples, mod, signal:isObj?item.signal:undefined, isExample:isObj?!!item.isExample:false, exSrc:isObj?item.exSrc:undefined, desc:isObj?item.desc:undefined});
       if(isObj && item.children && item.children.length){
         addChildren(item.children, node, level+1, color, mod);
       }
@@ -752,7 +752,7 @@ function buildTree(D){
   }
   (D.branches||[]).forEach(b=>{
     const color=D.modules[b.name]||D.color;
-    const bn=makeNode(b.name,1,color,root,{star:!!b.star,mod:b.name,examples:b.examples||[],signal:b.signal});
+    const bn=makeNode(b.name,1,color,root,{star:!!b.star,mod:b.name,examples:b.examples||[],signal:b.signal,desc:b.desc});
     addChildren(b.children, bn, 2, color, b.name);
     root.children.push(bn);
   });
@@ -810,6 +810,7 @@ function nodeStyle(n){
   /* 层级靠明度递进，不再靠模块色铺满；模块色交给左侧 3px 色条 */
   if(n.level===0)return`background:#1b2432;color:#fff;border:1.5px solid #5a718f;box-shadow:0 3px 16px rgba(0,0,0,.5);`;
   if(n.level===1)return`background:#18202d;color:#eef2f7;border:1px solid #3a4759;`;
+  if(n.isExample)return`background:rgba(245,158,11,.10);color:#fbbf24;border:1px solid rgba(245,158,11,.55);`;
   if(n.level===2)return`background:#131a25;color:#c7d2df;border:1px solid #2b3646;`;
   return`background:#0d121a;color:#8f9bab;border:1px solid #222c3a;`;
 }
@@ -832,12 +833,12 @@ function render(){
     el.appendChild(bar);
     if(n.star){const s=document.createElement('span');s.className='badge star';s.textContent='★';el.appendChild(s)}
     const ico=document.createElement('span');ico.style.cssText='opacity:.8;flex-shrink:0';
-    ico.textContent=n.level===0?'◆':n.level===1?'▣':n.level===2?'●':'·';el.appendChild(ico);
+    ico.textContent=n.isExample?'📄':(n.level===0?'◆':n.level===1?'▣':n.level===2?'●':'·');el.appendChild(ico);
     const txt=document.createElement('span');txt.className='txt';
     txt.style.cssText=`font-size:${n.level<=1?14:12.5}px;font-weight:${n.level<=2?600:400}`;
     txt.textContent=n.name;el.appendChild(txt);
     const exn=countEx(n);
-    if(exn>0){
+    if(exn>0 && !n.isExample){
       const eb=document.createElement('button');
       eb.type='button';eb.className='ex-open-btn';eb.textContent='例题 '+exn;
       eb.title='查看例题详情';
@@ -848,6 +849,7 @@ function render(){
     el._nodeRef=n;
     el.addEventListener('click',e=>{
       e.stopPropagation();if(moved){moved=false;return}
+      if(n.isExample){ openDetail(n,true); return; } /* 例题节点：直接弹窗并忽略筛选 */
       setFocus(n); /* 焦点模式：高亮根→当前路径 */
       if(n.children.length){
         const before=nodeScreenPos(n);n._open=!n._open;render();const after=nodeScreenPos(n);
@@ -897,6 +899,7 @@ function showHover(n){
   hoverCard.innerHTML=`<h4>${n.star?'★ ':''}${esc(n.name)}</h4>`
     +`<div class="path">${esc(path.join(' › '))}</div>`
     +`<div class="meta">${kids?`<b>${kids}</b> 个子节点　`:''}${exn?`<b>${exn}</b> 道命中例题`:'　暂无例题'}</div>`
+    +(n.desc?`<div class="sig">📝 ${esc(n.desc)}</div>`:'')
     +(n.signal?`<div class="sig">💡 ${esc(n.signal)}</div>`:'');
   hoverCard.style.display='block';
 }
