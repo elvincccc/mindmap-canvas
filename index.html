@@ -936,8 +936,8 @@ let detailAllExs=[];     // 当前节点全部例题（未筛选，供筛选器�
 let activeExIdx=-1;      // 当前激活的题索引
 let detailVol='';        // 弹窗内试卷筛选（卷名，''=全部）
 
-function openDetail(n,ignoreFilter){
-  detailFromMethod=!!ignoreFilter;  // 关联跳转(ignoreFilter=true)标记，普通点题清掉
+function openDetail(n,ignoreFilter,fromMethod){
+  detailFromMethod=!!fromMethod;  // 仅方法提炼「关联例题」跳转(fromMethod=true)置位；例题节点/普通点题不置，关闭不回方法面板
   hideHover();
   document.getElementById('detailVolSelect').style.display='';
   /* 重置解析皮肤：默认深色，renderAns 按当前题是否有 solution 再决定 */
@@ -1375,7 +1375,7 @@ async function jumpToExample(ex){
   }
   if(!target){ alert('题目节点未找到，可能已迁移：'+ex.label); return; }
   if(typeof centerOn==='function')centerOn(target);
-  if(typeof openDetail==='function')openDetail(target,true);
+  if(typeof openDetail==='function')openDetail(target,true,true);  /* 关联例题：忽略筛选+关闭返回方法面板 */
   if(typeof detailExs!=='undefined'){
     const idx=detailExs.findIndex(e=>e.src===ex.src);
     if(idx>=0 && typeof activateEx==='function')activateEx(idx);
