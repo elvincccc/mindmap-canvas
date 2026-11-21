@@ -916,10 +916,10 @@ function rich(s){
   return esc(s||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<span style="color:#fbbf24;font-weight:700">$1</span>');
 }
 /* 收集节点自身及子树的例题（用于弹窗，受当前筛选影响） */
-function nodeExamples(n){
+function nodeExamples(n,ignoreFilter){
   const out=[];
   (function rec(x){
-    (x.examples||[]).forEach(e=>{if(exMatch(e))out.push(e)});
+    (x.examples||[]).forEach(e=>{if(ignoreFilter||exMatch(e))out.push(e)});
     (x.children||[]).forEach(rec);
   })(n);
   return out;
@@ -932,7 +932,7 @@ let detailAllExs=[];     // 当前节点全部例题（未筛选，供筛选器�
 let activeExIdx=-1;      // 当前激活的题索引
 let detailVol='';        // 弹窗内试卷筛选（卷名，''=全部）
 
-function openDetail(n){
+function openDetail(n,ignoreFilter){
   hideHover();
   document.getElementById('detailVolSelect').style.display='';
   /* 重置解析皮肤：默认深色，renderAns 按当前题是否有 solution 再决定 */
@@ -942,7 +942,7 @@ function openDetail(n){
   const path=[];let cur=n;while(cur){path.unshift(cur.name);cur=cur._parent}
   document.getElementById('detailTitle').textContent=n.name;
   document.getElementById('detailPath').textContent=path.join(' › ');
-  detailAllExs=nodeExamples(n).sort((a,b)=>{
+  detailAllExs=nodeExamples(n,ignoreFilter).sort((a,b)=>{
     const ka=exSortKey(a),kb=exSortKey(b);
     for(let i=0;i<ka.length;i++){if(ka[i]!==kb[i])return ka[i]-kb[i]}
     return 0;
@@ -1365,7 +1365,7 @@ async function jumpToExample(ex){
   }
   if(!target){ alert('题目节点未找到，可能已迁移：'+ex.label); return; }
   if(typeof centerOn==='function')centerOn(target);
-  if(typeof openDetail==='function')openDetail(target);
+  if(typeof openDetail==='function')openDetail(target,true);
   if(typeof detailExs!=='undefined'){
     const idx=detailExs.findIndex(e=>e.src===ex.src);
     if(idx>=0 && typeof activateEx==='function')activateEx(idx);
