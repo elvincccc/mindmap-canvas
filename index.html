@@ -928,11 +928,13 @@ function nodeExamples(n,ignoreFilter){
 const detailBox=document.getElementById('detailBox');
 const detailBackdrop=document.getElementById('detailBackdrop');
 let detailExs=[];        // 当前弹窗的例题数组（经试卷筛选）
+let detailFromMethod=false;  // 弹窗是否由方法提炼「关联例题」跳转打开：关闭后返回方法面板
 let detailAllExs=[];     // 当前节点全部例题（未筛选，供筛选器统计）
 let activeExIdx=-1;      // 当前激活的题索引
 let detailVol='';        // 弹窗内试卷筛选（卷名，''=全部）
 
 function openDetail(n,ignoreFilter){
+  detailFromMethod=!!ignoreFilter;  // 关联跳转(ignoreFilter=true)标记，普通点题清掉
   hideHover();
   document.getElementById('detailVolSelect').style.display='';
   /* 重置解析皮肤：默认深色，renderAns 按当前题是否有 solution 再决定 */
@@ -1187,7 +1189,12 @@ function openLightbox(src){lb.querySelector('img').src=src;lb.classList.add('ope
 function closeLightbox(){lb.classList.remove('open');lb.querySelector('img').src=''}
 lb.onclick=closeLightbox;
 lb.querySelector('.lb-close').onclick=closeLightbox;
-function closeDetail(){ detailBox.classList.remove('open'); detailBackdrop.style.display='none'; document.getElementById('detailVolSelect').style.display=''; }
+function closeDetail(){
+  detailBox.classList.remove('open'); detailBackdrop.style.display='none'; document.getElementById('detailVolSelect').style.display='';
+  if(detailFromMethod){ detailFromMethod=false; if(typeof openMethods==='function'){
+    Promise.resolve(openMethods()).then(()=>{ const el=document.getElementById('methExList'); if(el)el.classList.add('open'); });
+  } }
+}
 document.getElementById('detailClose').onclick=closeDetail;
 detailBackdrop.onclick=closeDetail;
 
