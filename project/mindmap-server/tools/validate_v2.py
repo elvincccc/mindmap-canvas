@@ -6,7 +6,7 @@
 结构：answer / oneLiner / steps[] (三段式) / errors[] / insight{} (对象)
 检查：
   1. answer 与 ans 一致；oneLiner ≤35 字
-  2. steps.n 连续；action≤12 / why 20~45 / detail 50~70 字（边界放行±3字）；至多一个 key
+  2. steps.n 连续；action≤12 / why 20~35 / detail 40~55 字（边界放行±5字）；至多一个 key
   3. errors 字母集合 = 选项字母 − 答案字母（只错项）
   4. error.type 仅需非空（开放填写、随机应变）；why ≤30 字
   5. insight 为对象，含 signal/essence/strategy；strategy 含 4 子字段
@@ -32,13 +32,13 @@ REFERENCE_ERROR_TYPES = {
     "搭配不当", "语义重复", "偏离主旨", "衔接不当", "语序不当", "不合设问",
 }
 # 字段字数区间：(下限(不含), 上限(含))；None 表示该侧不设限
-# action ≤12；why 20~45；detail 50~70（下限强制、自然书写，避免顶格）
-# 边界容差 TOLERANCE=3：多写或少写 1~3 字一律放行（即实际放行 why 17~48、detail 47~73）
-TOLERANCE = 3
+# action ≤12；why 20~35；detail 40~55（下限强制、自然书写，避免顶格）
+# 边界容差 TOLERANCE=5：多写或少写 1~5 字一律放行（即实际放行 why 15~40、detail 35~60）
+TOLERANCE = 5
 STEP_LIMITS = {
     "action": (None, 12),
-    "why": (20, 45),
-    "detail": (50, 70),
+    "why": (20, 35),
+    "detail": (40, 55),
 }
 
 
@@ -78,7 +78,7 @@ def validate(item):
                 if not v:
                     errs.append(f"steps[{s.get('n')}] 缺 {f}")
                     continue
-                # 边界容差：多写或少写 1~3 字放行（下限放宽 TOLERANCE、上限放宽 TOLERANCE）
+                # 边界容差：多写或少写 1~5 字放行（下限放宽 TOLERANCE、上限放宽 TOLERANCE）
                 if lo is not None and len(v) < lo - TOLERANCE:
                     errs.append(f"steps[{s.get('n')}].{f} 不足（{len(v)}字，需 ≥{lo - TOLERANCE}）")
                 if hi is not None and len(v) > hi + TOLERANCE:

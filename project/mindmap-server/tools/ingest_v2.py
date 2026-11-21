@@ -7,8 +7,8 @@ ingest_v2.py —— 试卷错题录入 v2（hit 自动派生，杜绝手填）
   1. hit 唯一来源是 PDF 的「正确答案 vs 你的答案」：set(正确)==set(你的) → 做对
      —— 不再有 --hit 手填，从根上杜绝「第71题填反」的雷。
   2. 幂等：按 src 去重，重复跑不产生重复题。
-  3. 数据摆放正确：以 mindmap-demo/data.json（含全部样板）为基准合并，
-     同时覆盖 server/data.json + demo/data.json + demo/data.js + 对应分科文件，
+   3. 数据摆放正确：以 mindmap-demo/data.json（含全部样板）为基准合并，
+      同时覆盖 server/data.json + demo/data.json + 对应分科文件（data.js 已废弃），
      再跑 split_data.py —— 杜绝「样板只在 demo 被冲掉」。
   4. 先校验后部署：ans 与 solution.answer 一致、hit 与派生值一致、
      validate_v2 结构全 PASS，通过后才能 --deploy。
@@ -40,17 +40,16 @@ SERVER = '/workspace/mindmap-server'
 DEMO = '/workspace/mindmap-demo'
 DATA_SERVER = os.path.join(SERVER, 'data.json')
 DATA_DEMO = os.path.join(DEMO, 'data.json')
-DATA_JS = os.path.join(DEMO, 'data.js')
 
 SUBJ_FILE = {'判断推理':'p1.json','常识应用':'p2.json','数量关系':'p3.json',
              '言语理解':'p4.json','资料分析':'p5.json'}
 
 # 校验口径与 tools/validate_v2.py 保持一致（2026-11-19 更新）
 # error.type 开放填写，仅查非空；词表仅作参考，不再拦截
-# 字数区间：(下限(不含), 上限(含))；action≤12 / why 20~45 / detail 50~70
-# 边界容差 TOLERANCE=3：多写或少写 1~3 字一律放行（实际放行 why 17~48、detail 47~73）
-TOLERANCE = 3
-STEP_LIMITS = {"action": (None, 12), "why": (20, 45), "detail": (50, 70)}
+# 字数区间：(下限(不含), 上限(含))；action≤12 / why 20~35 / detail 40~55
+# 边界容差 TOLERANCE=5：多写或少写 1~5 字一律放行（实际放行 why 15~40、detail 35~60）
+TOLERANCE = 5
+STEP_LIMITS = {"action": (None, 12), "why": (20, 35), "detail": (40, 55)}
 
 
 # ─────────────────────── helpers ───────────────────────
@@ -236,7 +235,7 @@ def cmd_ingest(args):
         return 1
 
     # 2) 以 demo 完整对象为基准合并（防样板被冲）
-    base, js_prefix = load_json_with_js(DATA_DEMO)
+    base, _ = load_json_with_js(DATA_DEMO)
     subject_obj = base['subjects'][subject]
     target = find_node(subject_obj, node_name)
     if target is None:
@@ -264,14 +263,13 @@ def cmd_ingest(args):
             changed, subject, node_name))
         return 0
 
-    # 3) 覆盖 4 处 + split
-    print('\n=== 写入 4 处数据 ===')
+    # 3) 覆盖 3 处 + split
+    print('\n=== 写入 3 处数据 ===')
     dump_json(DATA_DEMO, base)
     dump_json(DATA_SERVER, base)
-    dump_json(DATA_JS, base, js_prefix)
     p5 = os.path.join(DEMO, 'data', 'subjects', SUBJ_FILE[subject])
     dump_json(p5, subject_obj)
-    for p in (DATA_SERVER, DATA_DEMO, DATA_JS, p5):
+    for p in (DATA_SERVER, DATA_DEMO, p5):
         print('  written', os.path.basename(p), os.path.getsize(p), 'bytes')
 
     # 4) split（会重新生成 manifest + 全部分科，含样板）
@@ -302,7 +300,7 @@ def cmd_ingest(args):
 
     # 7) 可选部署
     if args.deploy:
-        files = ['data.json','data.js','data/manifest.json',
+        files = ['data.json','data/manifest.json',
                  'data/subjects/p1.json','data/subjects/p2.json',
                  'data/subjects/p3.json','data/subjects/p4.json','data/subjects/p5.json']
         print('\n=== 原子部署 ===')
