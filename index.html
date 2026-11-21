@@ -777,19 +777,29 @@ function countEx(n,key){
   }
   return n._exN;
 }
+/* 可见子节点：例题节点(isExample)必须通过当前筛选才布局/渲染；非例题节点恒显示。
+   放在布局与渲染的公共入口，避免筛选态下末级例题节点纹丝不动（bug 2026-11-21）。 */
+function visibleChildren(n){
+  return (n.children||[]).filter(c=>{
+    if(!c.isExample) return true;
+    const ex=(c.examples||[])[0];
+    return ex ? exMatch(ex) : true;   // 无题目对象的例题节点保守显示，避免误隐藏
+  });
+}
 
 /* 布局 */
 function layout(){
   let cursor=0;
   function estH(name,l){const w=COLW[l]-44,per=Math.max(8,Math.floor(w/13)),lines=Math.max(1,Math.ceil(String(name).length/per));return Math.max(COLH[l],lines*19+14)}
   function place(n,l){n._w=COLW[l];n._h=estH(n.name,l);n._x=xOf[l];
-    if(!(n.children.length&&n._open)){n._y=cursor+n._h/2;cursor+=n._h+GAPY}
-    else{n.children.forEach(c=>place(c,l+1));n._y=(n.children[0]._y+n.children[n.children.length-1]._y)/2}}
+    const vc=visibleChildren(n);
+    if(!(vc.length&&n._open)){n._y=cursor+n._h/2;cursor+=n._h+GAPY}
+    else{vc.forEach(c=>place(c,l+1));n._y=(vc[0]._y+vc[vc.length-1]._y)/2}}
   place(rootNode,0);
   let minT=Infinity,maxB=-Infinity,maxR=0;
-  (function scan(n){const t=n._y-n._h/2,b=n._y+n._h/2;if(t<minT)minT=t;if(b>maxB)maxB=b;if(n._x+n._w>maxR)maxR=n._x+n._w;if(n.children.length&&n._open)n.children.forEach(scan)})(rootNode);
+  (function scan(n){const t=n._y-n._h/2,b=n._y+n._h/2;if(t<minT)minT=t;if(b>maxB)maxB=b;if(n._x+n._w>maxR)maxR=n._x+n._w;if(n.children.length&&n._open)visibleChildren(n).forEach(scan)})(rootNode);
   const dy=PAD-minT;
-  (function sh(n){n._y+=dy;if(n.children.length&&n._open)n.children.forEach(sh)})(rootNode);
+  (function sh(n){n._y+=dy;if(n.children.length&&n._open)visibleChildren(n).forEach(sh)})(rootNode);
   return{w:Math.max(maxR+PAD,240),h:Math.max(maxB+dy+PAD,240)}
 }
 /* 连线 */
@@ -866,7 +876,7 @@ function render(){
     el.addEventListener('mousemove',e=>moveHover(e));
     el.addEventListener('mouseleave',hideHover);
     n._el=el;nodesBox.appendChild(el);
-    if(n.children.length&&n._open)n.children.forEach(ch=>{edgeList.push([n,ch]);walk(ch)});
+    if(n.children.length&&n._open)visibleChildren(n).forEach(ch=>{edgeList.push([n,ch]);walk(ch)});
   }
   walk(rootNode);lastEdges=edgeList;drawEdges(edgeList);applyFocus();
 }
