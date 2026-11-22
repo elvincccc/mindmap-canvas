@@ -682,6 +682,9 @@ const xOf=[];(function(){let a=PAD;for(let i=0;i<COLW.length;i++){xOf.push(a);a+
 const viewport=document.getElementById('viewport'),stage=document.getElementById('stage');
 const nodesBox=document.getElementById('nodes'),edgesSvg=document.getElementById('edges');
 const hoverCard=document.getElementById('hoverCard');
+/* 触屏设备(平板/手机)无真正 hover：点击合成的 mouseenter 不会配对的 mouseleave，
+   悬浮卡会永久卡住且无法点掉。触屏统一禁用 hover 预览，节点看详情走点击弹窗。*/
+const IS_TOUCH=window.matchMedia&&window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
 let rootNode=null,focusNode=null,scale=1,tx=40,ty=40;
 let focusPath=[]; /* 焦点模式：根→当前节点的路径节点数组 */
@@ -838,7 +841,8 @@ function render(){
     if(n.children.length){const ex=document.createElement('span');ex.className='exp';ex.textContent=n._open?'－':'＋';el.appendChild(ex)}
     el._nodeRef=n;
     el.addEventListener('click',e=>{
-      e.stopPropagation();if(moved){moved=false;return}
+      e.stopPropagation();hideHover(); /* 点节点先收起悬浮卡，避免与弹窗叠加/残留 */
+      if(moved){moved=false;return}
       if(n.isExample){ openDetail(n,true); return; } /* 例题节点：直接弹窗并忽略筛选 */
       setFocus(n); /* 焦点模式：高亮根→当前路径 */
       if(n.children.length){
@@ -884,6 +888,7 @@ function clearFocus(){
 }
 /* hover 预览 */
 function showHover(n){
+  if(IS_TOUCH)return; /* 触屏禁用：避免点击后悬浮卡卡住无法关闭 */
   const path=[];let cur=n;while(cur){path.unshift(cur.name);cur=cur._parent}
   const exn=countEx(n),kids=n.children.length;
   hoverCard.innerHTML=`<h4>${n.star?'★ ':''}${esc(n.name)}</h4>`
