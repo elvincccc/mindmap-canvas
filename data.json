@@ -27837,7 +27837,7 @@
               "C.田径场地>游泳场地>健身房>冰雪运动场地",
               "D.田径场地>冰雪运动场地>游泳场地>健身房"
              ],
-             "img": "assets/img/zl_1-8571dc445b.jpg",
+             "img": "assets/img/q84_mat_pair.png",
              "solution": {
               "answer": "D",
               "oneLiner": "单位面积＝面积÷数量，冰雪33个要换算，田径>冰雪>游泳>健身房",
@@ -28231,7 +28231,7 @@
                }
               }
              },
-             "img": "assets/img/q89_mat.png"
+             "img": "assets/img/q89_mat_pair.png"
             }
            ]
           },
