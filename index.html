@@ -909,10 +909,16 @@ function rich(s){
   return esc(s||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<span style="color:#fbbf24;font-weight:700">$1</span>');
 }
 /* 收集节点自身及子树的例题（用于弹窗，受当前筛选影响） */
+/* 节点的完整挂载路径（从根到该节点），题型定位派生自此 */
+function nodePathOf(node){
+  const p=[];let cur=node;while(cur){p.unshift(cur.name);cur=cur._parent}
+  return p;
+}
 function nodeExamples(n,ignoreFilter){
   const out=[];
   (function rec(x){
-    (x.examples||[]).forEach(e=>{if(ignoreFilter||exMatch(e))out.push(e)});
+    // 打上该题真实挂载节点引用：弹窗从二级节点打开时，每题定位应到自己的叶子节点，非弹窗节点
+    (x.examples||[]).forEach(e=>{if(ignoreFilter||exMatch(e)){e._hostNode=x;out.push(e)}});
     (x.children||[]).forEach(rec);
   })(n);
   return out;
@@ -1045,9 +1051,13 @@ function renderZpSolution(ex,i){
     h+=`<div class="zp-err"><div class="h"><span class="k">${esc(e.o||'')}</span><span class="ty">${esc(e.type||'')}</span></div><div class="why">${esc(e.why||'')}</div></div>`;
   });
   h+='</div></div></div>';
-  // ⑤ 题型定位（派生自题目在导图树的挂载路径——单一数据源，与节点永远一致；不再读手写 position）
-  //    兼容：若将来从方法库等非导图入口打开、detailNodePath 为空，才回退到 ins.position
-  const locPath=(Array.isArray(detailNodePath)&&detailNodePath.length)?detailNodePath
+  // ⑤ 题型定位（派生自题目在导图树的真实挂载路径——单一数据源，与节点永远一致；不再读手写 position）
+  //    优先取当前题自己的挂载节点（nodeExamples 打的 _hostNode），定位到叶子节点；
+  //    这样从二级节点打开弹窗、切到深层题时，定位显示的仍是该题的完整路径，而非弹窗节点的二级路径。
+  //    兼容：无 _hostNode（如方法入口）、detailNodePath 为空时，才回退到 ins.position。
+  const hostPath=(detailExs[i]&&detailExs[i]._hostNode)?nodePathOf(detailExs[i]._hostNode):[];
+  const locPath=hostPath.length?hostPath
+              :(Array.isArray(detailNodePath)&&detailNodePath.length)?detailNodePath
               :(typeof ins.position==='string'?ins.position.split(/\s*→\s*/).map(s=>s.trim()):[]);
   if(locPath.length){
     const path=esc(locPath.join(' → ')).split(/\s*→\s*/).join('<span class="sep">›</span>');
